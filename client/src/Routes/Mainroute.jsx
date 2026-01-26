@@ -1,25 +1,21 @@
+// src/Mainroute.js
 import React from "react";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 
-// Pages
+// Auth & Public Pages
 import Login from "@/Components/Auth/Login";
-import Register from "@/Components/Auth/Register";
-import ForgotPassword from "@/Components/Auth/ForgotPassword";
-import VerifyEmail from "@/Components/Auth/VerifyEmail";
 import Navbar from "@/Components/Layout/Navbar";
-
-// Route Guards
 import PublicRoute from "@/Routes/PublicRoute";
 import PrivateRoute from "@/Routes/PrivateRoute";
 
-// Dummy Pages (Replace with real imports)
+// Import the new Admin Routes file
+import AdminRoutes from "@/Routes/AdminRoutes";
+
+// Dummy Pages
 const Home = () => <div className="pt-24 text-center">Home Page</div>;
 const Products = () => <div className="pt-24 text-center">Products Page</div>;
-const About = () => <div className="pt-24 text-center">About Page</div>;
-const Contact = () => <div className="pt-24 text-center">Contact Page</div>;
-const Arasai = () => <div className="pt-24 text-center">Contact Page</div>;
-const AdminDashboard = () => <div className="pt-24 text-center text-red-600 font-bold">Admin Dashboard</div>;
 
+// PUBLIC LAYOUT
 const MainLayout = () => (
   <>
     <Navbar />
@@ -30,38 +26,37 @@ const MainLayout = () => (
 function Mainroute() {
   return (
     <Routes>
+
+      {/* GROUP A: Public Website (With Navbar) */}
       <Route element={<MainLayout />}>
-        
-        {/* 1. AUTH ROUTES */}
-        {/* NOTE: If you are logged in, PublicRoute will redirect you to Home automatically */}
+        {/* Auth Routes */}
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
         </Route>
 
-        {/* 2. PUBLIC PAGES */}
+        {/* Public Pages */}
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<Products />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="//why-arasi" element={<Arasai />} />
 
-        {/* 3. PROTECTED USER ROUTES */}
+        {/* User Protected Routes */}
         <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>
            <Route path="/cart" element={<div className="pt-24 text-center">Cart Page</div>} />
         </Route>
-
-        {/* 4. ADMIN ROUTES */}
-        <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
-           <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        </Route>
-
-        {/* Catch-all: Redirect to home or login */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-
       </Route>
+
+
+      {/* GROUP B: Admin Routes (Clean & Modular) */}
+      <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
+        {/* 1. We match "/admin/*" to catch any admin sub-path.
+            2. We render <AdminRoutes /> which handles the rest.
+        */}
+        <Route path="/admin/*" element={<AdminRoutes />} />
+      </Route>
+
+
+      {/* Catch-all */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+
     </Routes>
   );
 }
