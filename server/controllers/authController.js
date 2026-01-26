@@ -1,0 +1,271 @@
+const User = require("../models/userModel");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const sendEmail = require("../utils/sendEmail");
+const crypto = require("crypto"); // Built-in node module for random OTP
+
+// --- Helper: Generate JWT ---
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+};
+
+// --- Helper: Send Token Response ---
+const sendTokenResponse = (user, statusCode, res, message) => {
+  const token = generateToken(user._id);
+
+  // Cookie options
+  const options = {
+    expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day
+    httpOnly: true, // Prevents client-side JS from reading the cookie (Security)
+    secure: process.env.NODE_ENV === "production", // HTTPS only in prod
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  };
+
+  // Remove password from output
+  user.password = undefined;
+  user.otp = undefined;
+
+  res.status(statusCode).cookie("token", token, options).json({
+    success: true,
+    message,
+    token, // Sending token in body as fallback
+    user,
+  });
+};
+
+// @desc    Register User
+// @route   POST /api/auth/register
+// @desc    Register User
+// @route   POST /api/auth/register
+exports.register = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+
+    // 1. Check if user exists
+    const userExists = await User.findOne({ email });
+    if (userExists) return res.status(400).json({ success: false, message: "User already exists" });
+
+    // 2. Hash Password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // 3. Generate OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const hashedOtp = await bcrypt.hash(otp, salt);
+
+    // 4. Create User (Database is fast)
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: role || "user",
+      otp: hashedOtp,
+      otpExpires: Date.now() + 10 * 60 * 1000,
+      isVerified: false
+    });
+
+    // 5. Send Email (BACKGROUND PROCESS - NO 'await')
+    // This allows the code to continue immediately without waiting 3-5 seconds
+    sendEmail({
+      email: user.email,
+      subject: "Verify your Account",
+      message: `Your verification code is: ${otp}`,
+    }).catch(err => console.error("Background Email Error:", err.message));
+
+    // 6. Respond Immediately
+    res.status(200).json({ 
+      success: true, 
+      message: "OTP sent. Please verify.", 
+      email: user.email 
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) return res.status(400).json({ success: false, message: "User not found" });
+
+    if (user.isVerified) return res.status(400).json({ success: false, message: "User already verified" });
+
+    // Check Expiry
+    if (user.otpExpires < Date.now()) {
+        return res.status(400).json({ success: false, message: "OTP Expired" });
+    }
+
+    // Verify OTP
+    const isMatch = await bcrypt.compare(otp, user.otp);
+    if (!isMatch) return res.status(400).json({ success: false, message: "Invalid OTP" });
+
+    // Activate User
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    sendTokenResponse(user, 200, res, "Email Verified Successfully");
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Login User
+// @route   POST /api/auth/login
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // 1. Validate
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: "Please provide email and password" });
+    }
+
+    // 2. Check User (Include password field explicitly if select: false was used, but here model is simple)
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    // 3. Compare Password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    sendTokenResponse(user, 200, res, "Logged in Successfully");
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Logout User
+// @route   GET /api/auth/logout
+exports.logout = async (req, res) => {
+  res.cookie("token", "none", {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+  });
+
+  res.status(200).json({ success: true, message: "Logged out successfully" });
+};
+
+// @desc    Forgot Password (Send OTP)
+// @route   POST /api/auth/forgot-password
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Change this in your Node.js authController.js
+    const otp = Math.floor(1000 + Math.random() * 9000).toString(); // 4 digit OTP
+
+    // 2. Hash OTP before saving (Security)
+    const salt = await bcrypt.genSalt(10);
+    const hashedOtp = await bcrypt.hash(otp, salt);
+
+    // 3. Save to DB with Expiry (10 Minutes)
+    user.otp = hashedOtp;
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    // 4. Send Email
+    const message = `Your Password Reset OTP is: ${otp}\n\nIt is valid for 10 minutes.`;
+    
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Password Reset OTP",
+        message,
+      });
+
+      res.status(200).json({ success: true, message: "OTP sent to email" });
+    } catch (err) {
+      user.otp = undefined;
+      user.otpExpires = undefined;
+      await user.save();
+      return res.status(500).json({ success: false, message: "Email could not be sent" });
+    }
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Resend OTP
+// @route   POST /api/auth/resend-otp
+exports.resendOtp = async (req, res) => {
+  // Logic is largely same as Forgot Password, but you can add rate limiting here
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const salt = await bcrypt.genSalt(10);
+    const hashedOtp = await bcrypt.hash(otp, salt);
+
+    user.otp = hashedOtp;
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    await sendEmail({
+      email: user.email,
+      subject: "Resend: Password Reset OTP",
+      message: `Your new OTP is: ${otp}`,
+    });
+
+    res.status(200).json({ success: true, message: "OTP Resent successfully" });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Reset Password (Verify OTP & Set New Password)
+// @route   POST /api/auth/reset-password
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    const user = await User.findOne({
+      email,
+      otpExpires: { $gt: Date.now() }, // Check if not expired
+    });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: "Invalid Email or OTP Expired" });
+    }
+
+    // Verify OTP
+    const isOtpMatch = await bcrypt.compare(otp, user.otp);
+    if (!isOtpMatch) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    // Hash New Password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    // Clear OTP fields
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    sendTokenResponse(user, 200, res, "Password Reset Successfully");
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
