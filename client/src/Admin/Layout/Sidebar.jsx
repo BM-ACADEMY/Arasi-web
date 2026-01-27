@@ -3,9 +3,11 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { adminSidebarItems } from "../navigation";
 import { LogOut, Settings, HelpCircle } from "lucide-react";
+import { useAuth } from "@/context/AuthContext"; // <--- 1. Import Hook (Adjust path as needed)
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
+  const { user, logout } = useAuth(); // <--- 2. Get user data and logout function
 
   return (
     <>
@@ -35,8 +37,10 @@ const Sidebar = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* 2. NAVIGATION LINKS (Scrollable) */}
+        {/* 2. NAVIGATION LINKS */}
         <div className="flex-1 overflow-y-auto py-6">
+           {/* ... (Your existing navigation code remains unchanged) ... */}
+           
           <div className="px-6 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
             Main Menu
           </div>
@@ -63,34 +67,34 @@ const Sidebar = ({ isOpen, onClose }) => {
               );
             })}
           </nav>
-
-          {/* Secondary Group Example */}
-          <div className="mt-8 px-6 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Support
-          </div>
-          <nav className="space-y-1 px-3">
-             <Link to="/admin/help" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 transition-all hover:bg-gray-800 hover:text-white">
-                <HelpCircle size={20} /> Help Center
-             </Link>
-             <Link to="/admin/settings" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 transition-all hover:bg-gray-800 hover:text-white">
-                <Settings size={20} /> Settings
-             </Link>
-          </nav>
         </div>
 
-        {/* 3. USER PROFILE FOOTER (Sticky at bottom) */}
+        {/* 3. USER PROFILE FOOTER (Dynamic) */}
         <div className="border-t border-gray-700/50 bg-[#151A2D] p-4">
           <div className="flex items-center gap-3">
             <img
-              src="https://i.pravatar.cc/150?img=12"
+              // Optional: Use user.avatar if available, else fallback
+              src={user?.avatar || "https://i.pravatar.cc/150?img=12"}
               alt="Admin"
               className="h-10 w-10 rounded-full border border-gray-600"
             />
             <div className="flex-1 overflow-hidden">
-              <h4 className="truncate text-sm font-semibold text-white">John David</h4>
-              <p className="truncate text-xs text-gray-400">john@pluto.com</p>
+              {/* Dynamic Name */}
+              <h4 className="truncate text-sm font-semibold text-white">
+                {user?.name || "Admin User"} 
+              </h4>
+              {/* Dynamic Email */}
+              <p className="truncate text-xs text-gray-400">
+                {user?.email || "loading..."}
+              </p>
             </div>
-            <button className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white">
+            
+            {/* Logout Button */}
+            <button 
+              onClick={logout} // <--- 3. Trigger Logout
+              className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
+              title="Logout"
+            >
               <LogOut size={18} />
             </button>
           </div>

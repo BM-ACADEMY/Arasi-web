@@ -5,6 +5,14 @@ const productSchema = new mongoose.Schema({
   slug: { type: String, unique: true },
   description: String,
 
+  // --- NEW: Detailed Info Section ---
+  details: [
+    {
+      heading: String, // e.g. "Ingredients"
+      content: String  // e.g. "Coconut Oil, Lavender Extract..."
+    }
+  ],
+
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category",
@@ -17,16 +25,13 @@ const productSchema = new mongoose.Schema({
   },
 
   brand: String,
-  images: [String], // Array of paths
+  images: [String],
 
   variants: [
     {
-      label: String,       // e.g. "1kg"
+      label: String,
       quantity: Number,
-      unit: {
-        type: String,
-        enum: ["piece", "kg", "g", "ltr", "ml"]
-      },
+      unit: { type: String, required: true, default: "piece" },
       price: Number,
       stock: Number
     }
@@ -35,7 +40,6 @@ const productSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
-// Search Index
 productSchema.index({ name: "text", brand: "text" });
 
 module.exports = mongoose.model("Product", productSchema);

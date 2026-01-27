@@ -1,19 +1,24 @@
 const Product = require("../models/productModel");
 const slugify = require("slugify");
 const { saveImage } = require("../utils/uploadConfig");
+const fs = require("fs");
+const path = require("path");
 
-// Helper: Format Product Images
 const formatProduct = (product) => ({
   ...product._doc,
   images: product.images.map(img => `${process.env.SERVER_URL}/${img}`)
 });
 
-// @route   POST /api/products
+const deleteImage = (relativePath) => {
+  if (!relativePath) return;
+  const fullPath = path.join(__dirname, "../public", relativePath);
+  if (fs.existsSync(fullPath)) try { fs.unlinkSync(fullPath); } catch (e) {}
+};
+
 exports.createProduct = async (req, res) => {
   try {
-    const { name, variants } = req.body;
+    const { name, variants, details } = req.body; // Get details
 
-    // 1. Process Images
     let imagePaths = [];
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
@@ -22,17 +27,19 @@ exports.createProduct = async (req, res) => {
       }
     }
 
-    // 2. Parse Variants (if coming as string from FormData)
+    // Parse JSON fields (variants & details)
     let parsedVariants = variants;
-    if (typeof variants === 'string') {
-        parsedVariants = JSON.parse(variants);
-    }
+    if (typeof variants === 'string') parsedVariants = JSON.parse(variants);
+
+    let parsedDetails = details;
+    if (typeof details === 'string') parsedDetails = JSON.parse(details);
 
     const product = await Product.create({
       ...req.body,
       slug: slugify(name, { lower: true }),
       images: imagePaths,
-      variants: parsedVariants
+      variants: parsedVariants,
+      details: parsedDetails // Save details
     });
 
     res.status(201).json({ success: true, data: formatProduct(product) });
@@ -41,88 +48,72 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// @route   GET /api/products
 exports.getAllProducts = async (req, res) => {
   try {
     const { keyword, category, subCategory } = req.query;
     let query = { isActive: true };
 
-    // Search Logic
-    if (keyword) {
-      query.$text = { $search: keyword };
-    }
-    // Filter Logic
+    if (keyword) query.$text = { $search: keyword };
     if (category) query.category = category;
     if (subCategory) query.subCategory = subCategory;
 
     const products = await Product.find(query)
       .populate("category", "name")
-      .populate("subCategory", "name");
+      .populate("subCategory", "name")
+      .sort({ createdAt: -1 });
 
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      data: products.map(formatProduct)
-    });
+    res.status(200).json({ success: true, count: products.length, data: products.map(formatProduct) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @route   GET /api/products/:id (ID Search)
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id)
-      .populate("category", "name")
-      .populate("subCategory", "name");
-
+    const product = await Product.findById(req.params.id).populate("category", "name").populate("subCategory", "name");
     if (!product) return res.status(404).json({ message: "Product not found" });
-
     res.status(200).json({ success: true, data: formatProduct(product) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @route   GET /api/products/slug/:slug (Slug Search)
 exports.getProductBySlug = async (req, res) => {
   try {
-    const product = await Product.findOne({ slug: req.params.slug })
-      .populate("category", "name")
-      .populate("subCategory", "name");
-
+    const product = await Product.findOne({ slug: req.params.slug }).populate("category", "name").populate("subCategory", "name");
     if (!product) return res.status(404).json({ message: "Product not found" });
-
     res.status(200).json({ success: true, data: formatProduct(product) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @route   PUT /api/products/:id
 exports.updateProduct = async (req, res) => {
   try {
     let product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    // Handle New Images (Append to existing)
     if (req.files && req.files.length > 0) {
       const newImages = [];
       for (const file of req.files) {
         const path = await saveImage(file.buffer, "products", req.body.name || product.name);
         newImages.push(path);
       }
-      // If user sends "clearImages": "true", wipe old ones. Otherwise append.
       if (req.body.clearImages === 'true') {
+        product.images.forEach(img => deleteImage(img));
         req.body.images = newImages;
       } else {
         req.body.images = [...product.images, ...newImages];
       }
     }
 
-    // Handle Variants Update
     if (req.body.variants && typeof req.body.variants === 'string') {
         req.body.variants = JSON.parse(req.body.variants);
+    }
+    
+    // Parse Details Update
+    if (req.body.details && typeof req.body.details === 'string') {
+        req.body.details = JSON.parse(req.body.details);
     }
 
     if (req.body.name) req.body.slug = slugify(req.body.name, { lower: true });
@@ -135,11 +126,16 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-// @route   DELETE /api/products/:id
 exports.deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
+
+    if (product.images && product.images.length > 0) {
+      product.images.forEach(img => deleteImage(img));
+    }
+
+    await product.deleteOne();
     res.status(200).json({ success: true, message: "Product deleted" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

@@ -10,9 +10,12 @@ import PrivateRoute from "@/Routes/PrivateRoute";
 
 // Import the new Admin Routes file
 import AdminRoutes from "@/Routes/AdminRoutes";
+import Register from "@/Components/Auth/Register";
+import ForgotPassword from "@/Components/Auth/ForgotPassword";
+import VerifyEmail from "@/Components/Auth/VerifyEmail";
+import Homeroute from "./Homeroute";
 
 // Dummy Pages
-const Home = () => <div className="pt-24 text-center">Home Page</div>;
 const Products = () => <div className="pt-24 text-center">Products Page</div>;
 
 // PUBLIC LAYOUT
@@ -32,11 +35,17 @@ function Mainroute() {
         {/* Auth Routes */}
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<Login />} />
+           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
         </Route>
 
         {/* Public Pages */}
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Homeroute />} />
         <Route path="/products" element={<Products />} />
+        <Route path="/about" element={<Products />} />
+        <Route path="/why-arasi" element={<Products />} />
+        <Route path="/contact" element={<Products />} />
 
         {/* User Protected Routes */}
         <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>

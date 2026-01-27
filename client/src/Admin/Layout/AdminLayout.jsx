@@ -3,21 +3,21 @@ import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Menu, Bell, Search, ChevronDown } from "lucide-react";
 import Sidebar from "./Sidebar";
+import { useAuth } from "@/context/AuthContext"; // <--- 1. Import Hook
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user } = useAuth(); // <--- 2. Get User Data
 
   return (
     <div className="flex h-screen bg-[#F3F4F6] font-sans">
-      {/* Sidebar (Fixed width) */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Main Content Wrapper (Flex Grow) */}
       <div className="flex flex-1 flex-col overflow-hidden lg:ml-64">
-
+        
         {/* 1. TOP NAVBAR */}
         <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm">
-
+          
           {/* Left: Mobile Toggle & Search */}
           <div className="flex items-center gap-4">
             <button
@@ -49,14 +49,19 @@ const AdminLayout = () => {
               </span>
             </div>
 
-            {/* User Dropdown Trigger (Visual Only) */}
+            {/* User Dropdown Trigger */}
             <div className="hidden items-center gap-2 border-l border-gray-200 pl-6 md:flex">
               <div className="text-right">
-                <p className="text-sm font-semibold text-gray-700">John David</p>
-                <p className="text-xs text-gray-500">Super Admin</p>
+                {/* Dynamic User Data */}
+                <p className="text-sm font-semibold text-gray-700">
+                    {user?.name || "Admin"}
+                </p>
+                <p className="text-xs text-gray-500 uppercase">
+                    {user?.role || "User"}
+                </p>
               </div>
               <img
-                src="https://i.pravatar.cc/150?img=12"
+                src={user?.avatar || "https://i.pravatar.cc/150?img=12"}
                 className="h-9 w-9 rounded-full border border-gray-200"
                 alt="Profile"
               />
@@ -66,7 +71,7 @@ const AdminLayout = () => {
           </div>
         </header>
 
-        {/* 2. PAGE CONTENT AREA (Scrollable) */}
+        {/* 2. PAGE CONTENT AREA */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-6">
           <div className="mx-auto max-w-7xl">
             <Outlet />

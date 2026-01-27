@@ -1,19 +1,34 @@
 const Category = require("../models/categoryModel");
+const SubCategory = require("../models/subCategoryModel"); // Import SubCategory
+const Product = require("../models/productModel"); // Import Product
 const slugify = require("slugify");
 const { saveImage } = require("../utils/uploadConfig");
 const fs = require("fs");
 const path = require("path");
 
-// Helper: Format Image URL
+// --- Helper: Format Image URL for Frontend ---
 const formatCategory = (cat) => ({
   ...cat._doc,
   image: cat.image ? `${process.env.SERVER_URL}/${cat.image}` : null
 });
 
+// --- Helper: Delete File from Filesystem ---
+const deleteImage = (relativePath) => {
+  if (!relativePath) return;
+  const fullPath = path.join(__dirname, "../public", relativePath); 
+  if (fs.existsSync(fullPath)) {
+    try {
+      fs.unlinkSync(fullPath);
+    } catch (err) {
+      console.error("Error deleting image:", err);
+    }
+  }
+};
+
 // @route   POST /api/categories
 exports.createCategory = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name } = req.body;
     let imagePath = "";
 
     if (req.file) {
@@ -23,7 +38,6 @@ exports.createCategory = async (req, res) => {
     const category = await Category.create({
       name,
       slug: slugify(name, { lower: true }),
-      description,
       image: imagePath
     });
 
@@ -36,7 +50,7 @@ exports.createCategory = async (req, res) => {
 // @route   GET /api/categories
 exports.getAllCategories = async (req, res) => {
   try {
-    const categories = await Category.find({ isActive: true });
+    const categories = await Category.find({ isActive: true }).sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
       count: categories.length,
@@ -79,12 +93,11 @@ exports.updateCategory = async (req, res) => {
 
     // Handle Image Update
     if (req.file) {
-      // Optional: Delete old image here using fs.unlinkSync
+      deleteImage(category.image); // Delete old image
       const newImagePath = await saveImage(req.file.buffer, "categories", req.body.name || category.name);
       req.body.image = newImagePath;
     }
 
-    // Handle Slug Update if name changes
     if (req.body.name) {
       req.body.slug = slugify(req.body.name, { lower: true });
     }
@@ -100,10 +113,34 @@ exports.updateCategory = async (req, res) => {
 // @route   DELETE /api/categories/:id
 exports.deleteCategory = async (req, res) => {
   try {
-    const category = await Category.findByIdAndDelete(req.params.id);
+    const categoryId = req.params.id;
+
+    // 1. Check for Dependent Subcategories
+    const hasSubCategories = await SubCategory.findOne({ category: categoryId });
+    if (hasSubCategories) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Cannot delete: This category has linked subcategories." 
+      });
+    }
+
+    // 2. Check for Dependent Products
+    const hasProducts = await Product.findOne({ category: categoryId });
+    if (hasProducts) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Cannot delete: This category contains products." 
+      });
+    }
+
+    // 3. Find and Delete
+    const category = await Category.findById(categoryId);
     if (!category) return res.status(404).json({ message: "Category not found" });
 
-    res.status(200).json({ success: true, message: "Category deleted" });
+    deleteImage(category.image); // Delete image from folder
+    await category.deleteOne();  // Delete from DB
+
+    res.status(200).json({ success: true, message: "Category deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

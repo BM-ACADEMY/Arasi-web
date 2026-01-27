@@ -8,7 +8,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true); // App initial load
-  const [isButtonLoading, setIsButtonLoading] = useState(false); // NEW: Button Loading
+  const [isButtonLoading, setIsButtonLoading] = useState(false); // Button Loading
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
 
   // --- REGISTER ---
   const register = async (name, email, password) => {
-    setIsButtonLoading(true); // 1. Start Loading
+    setIsButtonLoading(true);
     try {
       await api.post("/auth/register", { name, email, password });
       
@@ -38,13 +38,13 @@ export const AuthProvider = ({ children }) => {
       console.error(error);
       toast.error(error.response?.data?.message || "Registration failed");
     } finally {
-      setIsButtonLoading(false); // 2. Stop Loading
+      setIsButtonLoading(false);
     }
   };
 
   // --- LOGIN ---
   const login = async (email, password) => {
-    setIsButtonLoading(true); // 1. Start Loading
+    setIsButtonLoading(true);
     try {
       const { data } = await api.post("/auth/login", { email, password });
       
@@ -52,6 +52,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("user", JSON.stringify(data.user));
       
       toast.success("Logged in successfully!");
+      
       if (data.user.role === "admin") navigate("/admin/dashboard");
       else navigate("/");
       
@@ -59,16 +60,17 @@ export const AuthProvider = ({ children }) => {
       console.error(error);
       toast.error(error.response?.data?.message || "Login failed");
     } finally {
-      setIsButtonLoading(false); // 2. Stop Loading
+      setIsButtonLoading(false);
     }
   };
 
-  // ... keep verifyEmail and logout exactly as they were ...
+  // --- VERIFY EMAIL ---
   const verifyEmail = async (email, otp) => {
     try {
       const { data } = await api.post("/auth/verify-email", { email, otp });
       setUser(data.user);
       localStorage.setItem("user", JSON.stringify(data.user));
+      
       toast.success("Email Verified! Welcome.");
       navigate("/");
     } catch (error) {
@@ -76,8 +78,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // --- LOGOUT ---
   const logout = async () => {
-    try { await api.get("/auth/logout"); } catch (e) { console.error(e); }
+    try { 
+      await api.get("/auth/logout"); 
+      toast.success("Logged out successfully"); // <--- Added Toast Here
+    } catch (e) { 
+      console.error(e); 
+    }
+    
+    // Clear local state
     setUser(null);
     localStorage.removeItem("user");
     navigate("/login");
@@ -88,7 +98,7 @@ export const AuthProvider = ({ children }) => {
       value={{ 
         user, 
         loading, 
-        isButtonLoading, // <--- EXPORT THIS
+        isButtonLoading, 
         login, 
         register, 
         verifyEmail, 

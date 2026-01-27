@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-// Ensure Settings and Package are imported
-import { ShoppingBag, User, Menu, X, LogOut, Package, Settings, ChevronDown } from "lucide-react";
+// Added LayoutDashboard to imports
+import { ShoppingBag, User, Menu, X, LogOut, Package, Settings, ChevronDown, LayoutDashboard } from "lucide-react";
 import logo from "@/assets/logo.png";
 import SearchBar from "./SearchBar";
 import { useAuth } from "@/context/AuthContext";
@@ -14,6 +14,9 @@ const Navbar = () => {
   
   const location = useLocation();
   const { user, logout } = useAuth();
+
+  // CHECK: verify 'role' is the correct property in your database
+  const isAdmin = user?.role === 'admin'; 
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -82,7 +85,7 @@ const Navbar = () => {
 
           {/* 3. RIGHT SIDE: Icons */}
           <div className={`flex items-center gap-1 md:gap-3 ${isSearchOpen ? 'flex-1 justify-end' : ''}`}>
-             
+              
              <SearchBar isOpen={isSearchOpen} onToggle={setIsSearchOpen} />
 
              <Link to="/cart" className="relative p-2.5 rounded-full hover:bg-slate-100 text-slate-700 transition-colors flex items-center gap-2">
@@ -110,15 +113,27 @@ const Navbar = () => {
                           <p className="text-sm font-bold text-slate-800 truncate">{user.name}</p>
                           <p className="text-xs text-slate-500 truncate">{user.email}</p>
                         </div>
+                        
                         <div className="p-1 space-y-0.5">
-                          <Link to="/profile" className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-[#4183cf] hover:bg-slate-50 rounded-lg transition-colors">
-                            <Settings size={16} />
-                            <span>Profile</span>
-                          </Link>
-                          <Link to="/orders" className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-[#4183cf] hover:bg-slate-50 rounded-lg transition-colors">
-                            <Package size={16} />
-                            <span>Orders</span>
-                          </Link>
+                          {/* --- DESKTOP DROPDOWN LOGIC --- */}
+                          {isAdmin ? (
+                            <Link to="/admin/dashboard" className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-[#4183cf] hover:bg-slate-50 rounded-lg transition-colors">
+                              <LayoutDashboard size={16} />
+                              <span>Dashboard</span>
+                            </Link>
+                          ) : (
+                            <>
+                              <Link to="/profile" className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-[#4183cf] hover:bg-slate-50 rounded-lg transition-colors">
+                                <Settings size={16} />
+                                <span>Profile</span>
+                              </Link>
+                              <Link to="/orders" className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-[#4183cf] hover:bg-slate-50 rounded-lg transition-colors">
+                                <Package size={16} />
+                                <span>Orders</span>
+                              </Link>
+                            </>
+                          )}
+                          
                           <div className="h-px bg-gray-100 my-1 mx-2"></div>
                           <button 
                             onClick={logout} 
@@ -186,7 +201,7 @@ const Navbar = () => {
               <div className="bg-gray-50 px-6 py-6 border-t border-gray-100">
                 {user ? (
                   <div className="space-y-4">
-                     <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-[#4183cf] text-white flex items-center justify-center font-bold text-lg">
                            {user.name ? user.name.charAt(0).toUpperCase() : "U"}
                         </div>
@@ -194,36 +209,48 @@ const Navbar = () => {
                            <p className="font-bold text-slate-800">{user.name}</p>
                            <p className="text-xs text-slate-500">{user.email}</p>
                         </div>
-                     </div>
-                     
-                     {/* --- FIX START: Added Icons and Flex Layout --- */}
-                     <div className="grid grid-cols-2 gap-2">
-                        <Link 
-                          to="/profile" 
-                          onClick={() => setIsMobileMenuOpen(false)} 
-                          className="flex items-center justify-center gap-2 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg text-slate-700 active:bg-gray-50"
-                        >
-                           <Settings size={16} /> {/* Icon Added */}
-                           Profile
-                        </Link>
-                        <Link 
-                          to="/orders" 
-                          onClick={() => setIsMobileMenuOpen(false)} 
-                          className="flex items-center justify-center gap-2 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg text-slate-700 active:bg-gray-50"
-                        >
-                           <Package size={16} /> {/* Icon Added */}
-                           Orders
-                        </Link>
-                     </div>
-                     {/* --- FIX END --- */}
+                      </div>
+                      
+                      {/* --- MOBILE AUTH ACTIONS LOGIC --- */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {isAdmin ? (
+                          <Link 
+                            to="/admin/dashboard" 
+                            onClick={() => setIsMobileMenuOpen(false)} 
+                            className="col-span-2 flex items-center justify-center gap-2 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg text-slate-700 active:bg-gray-50"
+                          >
+                             <LayoutDashboard size={16} />
+                             Dashboard
+                          </Link>
+                        ) : (
+                          <>
+                            <Link 
+                              to="/profile" 
+                              onClick={() => setIsMobileMenuOpen(false)} 
+                              className="flex items-center justify-center gap-2 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg text-slate-700 active:bg-gray-50"
+                            >
+                              <Settings size={16} />
+                              Profile
+                            </Link>
+                            <Link 
+                              to="/orders" 
+                              onClick={() => setIsMobileMenuOpen(false)} 
+                              className="flex items-center justify-center gap-2 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg text-slate-700 active:bg-gray-50"
+                            >
+                              <Package size={16} />
+                              Orders
+                            </Link>
+                          </>
+                        )}
+                      </div>
 
-                     <button 
-                        onClick={() => { logout(); setIsMobileMenuOpen(false); }} 
-                        className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white bg-red-500 rounded-lg shadow-sm hover:bg-red-600"
-                     >
-                        <LogOut size={16} /> {/* Added Logout Icon too for consistency */}
-                        Logout
-                     </button>
+                      <button 
+                         onClick={() => { logout(); setIsMobileMenuOpen(false); }} 
+                         className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white bg-red-500 rounded-lg shadow-sm hover:bg-red-600"
+                      >
+                         <LogOut size={16} />
+                         Logout
+                      </button>
                   </div>
                 ) : (
                   <Link 
