@@ -5,6 +5,7 @@ const {
   createSubCategory,
   getAllSubCategories,
   getSubCategoryById,
+  getSubCategoryBySlug, // Added
   updateSubCategory,
   deleteSubCategory
 } = require("../controllers/subCategoryController");
@@ -15,8 +16,11 @@ router.route("/")
   .get(getAllSubCategories)
   .post(protect, authorize("admin"), upload.single("image"), createSubCategory);
 
+// New Slug Route
+router.route("/slug/:slug").get(getSubCategoryBySlug);
+
 router.route("/:id")
-  .get(getSubCategoryById) // ID Search
+  .get(getSubCategoryById)
   .put(protect, authorize("admin"), upload.single("image"), updateSubCategory)
   .delete(protect, authorize("admin"), deleteSubCategory);
 
