@@ -2,7 +2,6 @@
 import React from "react";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 
-// ... existing imports ...
 import Login from "@/Components/Auth/Login";
 import Navbar from "@/Components/Layout/Navbar";
 import PublicRoute from "@/Routes/PublicRoute";
@@ -12,12 +11,14 @@ import ForgotPassword from "@/Components/Auth/ForgotPassword";
 import VerifyEmail from "@/Components/Auth/VerifyEmail";
 import Homeroute from "./Homeroute";
 
-// --- NEW IMPORTS ---
+// Pages
 import SubCategoryPage from "@/Components/Pages/Shop/SubCategoryPage";
 import ProductListingPage from "@/Components/Pages/Shop/ProductListingPage";
+import ProductDetailsPage from "@/Components/Pages/Shop/ProductDetailsPage"; // New Import
 import AdminRoutes from "./AdminRoutes";
+import CartPage from "@/Components/Pages/Homepage/Cart/Cartpage";
 
-// Dummy Pages (Keep existing)
+// Dummy Pages
 const Products = () => <div className="pt-24 text-center">Products Page</div>;
 
 const MainLayout = () => (
@@ -39,22 +40,24 @@ function Mainroute() {
           <Route path="/verify-email" element={<VerifyEmail />} />
         </Route>
 
-        {/* Static Public Pages */}
+        {/* Public Pages */}
         <Route path="/" element={<Homeroute />} />
         <Route path="/products" element={<Products />} />
-        <Route path="/about" element={<Products />} />
-        <Route path="/contact" element={<Products />} />
 
         {/* Protected Routes */}
         <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>
-           <Route path="/cart" element={<div className="pt-24 text-center">Cart Page</div>} />
+           <Route path="/cart" element={<CartPage/>} />
         </Route>
 
-        {/* --- DYNAMIC SHOP ROUTES (Must be last in this group) --- */}
-        {/* 1. Category Click -> Shows SubCategories */}
+        {/* --- SHOP ROUTES --- */}
+
+        {/* 1. Single Product Detail (New Route) */}
+        <Route path="/product/:slug" element={<ProductDetailsPage />} />
+
+        {/* 2. Category Click -> Shows SubCategories */}
         <Route path="/:categorySlug" element={<SubCategoryPage />} />
-        
-        {/* 2. SubCategory Click -> Shows Products */}
+
+        {/* 3. SubCategory Click -> Shows Products */}
         <Route path="/:categorySlug/:subCategorySlug" element={<ProductListingPage />} />
       </Route>
 

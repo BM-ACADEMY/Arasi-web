@@ -6,17 +6,19 @@ import { ShoppingBag, User, Menu, X, LogOut, Package, Settings, ChevronDown, Lay
 import logo from "@/assets/logo.png";
 import SearchBar from "./SearchBar";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  
+  const { cartCount } = useCart();
+
   const location = useLocation();
   const { user, logout } = useAuth();
 
   // CHECK: verify 'role' is the correct property in your database
-  const isAdmin = user?.role === 'admin'; 
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -42,10 +44,10 @@ const Navbar = () => {
         }`}
       >
         <div className="container mx-auto px-4 md:px-8 flex items-center justify-between">
-          
+
           {/* 1. LEFT SIDE: Logo */}
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className={`flex-shrink-0 z-50 mr-4 transition-all duration-200 ${
               isSearchOpen ? "hidden lg:block" : "block"
             }`}
@@ -85,14 +87,17 @@ const Navbar = () => {
 
           {/* 3. RIGHT SIDE: Icons */}
           <div className={`flex items-center gap-1 md:gap-3 ${isSearchOpen ? 'flex-1 justify-end' : ''}`}>
-              
+
              <SearchBar isOpen={isSearchOpen} onToggle={setIsSearchOpen} />
 
              <Link to="/cart" className="relative p-2.5 rounded-full hover:bg-slate-100 text-slate-700 transition-colors flex items-center gap-2">
                 <ShoppingBag size={20} />
                 <span className="hidden sm:inline text-sm font-medium">Cart</span>
-                <span className="absolute top-1 right-1 sm:top-0 sm:right-0 bg-[#4183cf] text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">0</span>
-             </Link>
+{cartCount > 0 && (
+           <span className="absolute top-1 right-1 sm:top-0 sm:right-0 bg-[#4183cf] text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
+              {cartCount}
+           </span>
+        )}             </Link>
 
              <div className="hidden lg:block h-6 w-px bg-slate-200 mx-1"></div>
 
@@ -113,7 +118,7 @@ const Navbar = () => {
                           <p className="text-sm font-bold text-slate-800 truncate">{user.name}</p>
                           <p className="text-xs text-slate-500 truncate">{user.email}</p>
                         </div>
-                        
+
                         <div className="p-1 space-y-0.5">
                           {/* --- DESKTOP DROPDOWN LOGIC --- */}
                           {isAdmin ? (
@@ -133,10 +138,10 @@ const Navbar = () => {
                               </Link>
                             </>
                           )}
-                          
+
                           <div className="h-px bg-gray-100 my-1 mx-2"></div>
-                          <button 
-                            onClick={logout} 
+                          <button
+                            onClick={logout}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           >
                             <LogOut size={16} />
@@ -184,9 +189,9 @@ const Navbar = () => {
               {/* Mobile Links */}
               <div className="flex-1 overflow-y-auto px-6 py-4">
                  {navLinks.map((link) => (
-                    <Link 
-                      key={link.name} 
-                      to={link.path} 
+                    <Link
+                      key={link.name}
+                      to={link.path}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`block py-3.5 border-b border-gray-50 font-medium ${
                          location.pathname === link.path ? "text-[#4183cf]" : "text-slate-600"
@@ -210,13 +215,13 @@ const Navbar = () => {
                            <p className="text-xs text-slate-500">{user.email}</p>
                         </div>
                       </div>
-                      
+
                       {/* --- MOBILE AUTH ACTIONS LOGIC --- */}
                       <div className="grid grid-cols-2 gap-2">
                         {isAdmin ? (
-                          <Link 
-                            to="/admin/dashboard" 
-                            onClick={() => setIsMobileMenuOpen(false)} 
+                          <Link
+                            to="/admin/dashboard"
+                            onClick={() => setIsMobileMenuOpen(false)}
                             className="col-span-2 flex items-center justify-center gap-2 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg text-slate-700 active:bg-gray-50"
                           >
                              <LayoutDashboard size={16} />
@@ -224,17 +229,17 @@ const Navbar = () => {
                           </Link>
                         ) : (
                           <>
-                            <Link 
-                              to="/profile" 
-                              onClick={() => setIsMobileMenuOpen(false)} 
+                            <Link
+                              to="/profile"
+                              onClick={() => setIsMobileMenuOpen(false)}
                               className="flex items-center justify-center gap-2 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg text-slate-700 active:bg-gray-50"
                             >
                               <Settings size={16} />
                               Profile
                             </Link>
-                            <Link 
-                              to="/orders" 
-                              onClick={() => setIsMobileMenuOpen(false)} 
+                            <Link
+                              to="/orders"
+                              onClick={() => setIsMobileMenuOpen(false)}
                               className="flex items-center justify-center gap-2 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg text-slate-700 active:bg-gray-50"
                             >
                               <Package size={16} />
@@ -244,8 +249,8 @@ const Navbar = () => {
                         )}
                       </div>
 
-                      <button 
-                         onClick={() => { logout(); setIsMobileMenuOpen(false); }} 
+                      <button
+                         onClick={() => { logout(); setIsMobileMenuOpen(false); }}
                          className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white bg-red-500 rounded-lg shadow-sm hover:bg-red-600"
                       >
                          <LogOut size={16} />
@@ -253,9 +258,9 @@ const Navbar = () => {
                       </button>
                   </div>
                 ) : (
-                  <Link 
-                    to="/login" 
-                    onClick={() => setIsMobileMenuOpen(false)} 
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center justify-center gap-2 w-full py-3 bg-[#4183cf] text-white rounded-xl font-bold shadow-md shadow-blue-200"
                   >
                      <User size={18} />

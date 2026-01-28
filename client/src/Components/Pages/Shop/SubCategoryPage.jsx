@@ -46,7 +46,7 @@ const SubCategoryPage = () => {
   return (
     <section className="py-16 pt-25 bg-white min-h-screen flex justify-center w-full">
       <div className="w-full max-w-[1400px] px-6 md:px-12">
-        
+
         {/* Header - Left Aligned & Clean */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 pb-6 border-b border-gray-100">
           <div>
@@ -61,7 +61,7 @@ const SubCategoryPage = () => {
             {subCategories.length} Collections Available
           </div>
         </div>
-        
+
         {subCategories.length === 0 ? (
           <div className="text-center py-20 bg-gray-50 rounded-2xl">
             <p className="text-xl text-gray-500 font-serif">No collections found.</p>
@@ -74,7 +74,7 @@ const SubCategoryPage = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
             {subCategories.map((sub, index) => (
               <Link to={`/${categorySlug}/${sub.slug}`} key={sub._id} className="block group">
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: index * 0.05 }}
@@ -82,15 +82,15 @@ const SubCategoryPage = () => {
                 >
                   {/* Image Container - Tall Aspect Ratio (3:4) */}
                   <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg bg-gray-100 mb-4">
-                    <img 
-                      src={sub.image || "https://via.placeholder.com/600x800?text=No+Image"} 
-                      alt={sub.name} 
+                    <img
+                      src={sub.image || "https://via.placeholder.com/600x800?text=No+Image"}
+                      alt={sub.name}
                       className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
                     />
-                    
+
                     {/* Dark Overlay on Hover */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-                    
+
                     {/* Floating 'View' Button that appears on hover */}
                     <div className="absolute bottom-4 left-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                       <div className="bg-white/95 backdrop-blur-sm text-center py-3 text-xs font-bold uppercase tracking-widest text-gray-900 rounded shadow-lg">
@@ -104,7 +104,7 @@ const SubCategoryPage = () => {
                     <h3 className="text-lg md:text-xl font-serif text-gray-900 font-medium leading-snug group-hover:text-[#4183cf] transition-colors">
                       {sub.name}
                     </h3>
-                    
+
                     <div className="flex items-center gap-2 mt-2 group/link">
                       <span className="text-sm font-medium text-gray-400 group-hover:text-[#4183cf] transition-colors">
                         Shop Now

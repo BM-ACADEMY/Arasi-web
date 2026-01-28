@@ -1,116 +1,117 @@
-// src/Components/Pages/Shop/ProductCard.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, ShoppingCart, Minus, Plus } from 'lucide-react';
+import { Star, ShoppingCart, Minus, Plus, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useCart } from '@/context/CartContext'; // <--- Import Context
 
 const ProductCard = ({ product }) => {
-  // Local state for quantity for UI demo. 
-  // In real app, connect this to your Global CartContext.
+  const { addToCart, getItemQuantity } = useCart(); // Get context functions
   const [quantity, setQuantity] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const updateQuantity = (id, change) => {
-    setQuantity(prev => {
-      const newQty = prev + change;
-      return newQty < 0 ? 0 : newQty;
-    });
-    // Call global add-to-cart API here
+  // Sync local state with global cart state
+  useEffect(() => {
+    const qty = getItemQuantity(product._id);
+    setQuantity(qty);
+  }, [getItemQuantity, product._id]);
+
+  // Handler for Adding Item
+  const handleAddToCart = async (e) => {
+    e.preventDefault(); // Stop navigation to detail page
+    setIsLoading(true);
+
+    // Call backend
+    const success = await addToCart(product._id, 1);
+
+    if (success) {
+      // Logic handled by context update, but we can optimistically update local state if needed
+      // The useEffect above will catch the change from context
+    }
+    setIsLoading(false);
   };
 
-  // Safe fallback for image
-  const imageUrl = product.images && product.images.length > 0 
-    ? product.images[0] 
-    : "https://via.placeholder.com/300";
+  const imageUrl = product.images?.[0] || "https://via.placeholder.com/300";
+  const price = product.variants?.[0]?.price || 0;
+  const originalPrice = product.originalPrice || (price * 1.2).toFixed(0);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="bg-white rounded-[2rem] p-4 shadow-sm hover:shadow-xl transition-shadow duration-300 flex flex-col relative h-full"
+      className="bg-white rounded-[2rem] p-4 shadow-sm hover:shadow-xl transition-shadow duration-300 flex flex-col relative h-full group"
     >
-      {/* Image Container */}
-      <div className="relative w-full aspect-square rounded-[1.5rem] bg-gray-50 overflow-hidden mb-4 group cursor-pointer">
-        <img 
-          src={imageUrl} 
-          alt={product.name}
-          className="w-full h-full object-cover mix-blend-multiply group-hover:scale-110 transition-transform duration-500 ease-in-out"
-        />
-      </div>
-
-      {/* Content */}
-      <div className="px-2 flex flex-col flex-grow">
-        
-        {/* 1. Title */}
-        <h3 className="font-serif text-gray-900 tracking-tight text-xl font-medium leading-tight mb-2 line-clamp-2">
-          {product.name}
-        </h3>
-
-        {/* 2. Reviews (Mock data if missing from backend) */}
-        <div className="flex items-center gap-1 mb-3">
-          <Star size={14} className="fill-yellow-400 text-yellow-400" />
-          <span className="text-sm text-gray-500 font-medium">{product.rating || "4.5"}</span>
-          <span className="text-gray-300 mx-1">•</span>
-          <span className="text-sm text-gray-400">{product.numReviews || 0} reviews</span>
+      <Link to={`/product/${product.slug}`} className="block h-full flex flex-col">
+        <div className="relative w-full aspect-square rounded-[1.5rem] bg-gray-50 overflow-hidden mb-4">
+          <img
+            src={imageUrl}
+            alt={product.name}
+            className="w-full h-full object-cover mix-blend-multiply group-hover:scale-110 transition-transform duration-500 ease-in-out"
+          />
         </div>
 
-        {/* 3. Amount / Price */}
-        <div className="flex items-baseline gap-2 mb-4">
-          {/* Assuming variants[0] holds the main price */}
-          <span className="text-2xl font-medium text-gray-900">
-            ₹{product.variants?.[0]?.price || 0}
-          </span>
-          {/* Mock Original Price logic */}
-          {(product.originalPrice || 0) > (product.variants?.[0]?.price || 0) && (
-            <span className="text-sm text-gray-400 line-through">₹{product.originalPrice}</span>
-          )}
+        <div className="px-2 flex flex-col flex-grow">
+          <h3 className="font-serif text-gray-900 tracking-tight text-xl font-medium leading-tight mb-2 line-clamp-2">
+            {product.name}
+          </h3>
+
+          <div className="flex items-center gap-1 mb-3">
+            <Star size={14} className="fill-yellow-400 text-yellow-400" />
+            <span className="text-sm text-gray-500 font-medium">4.8</span>
+          </div>
+
+          <div className="flex items-baseline gap-2 mb-4 mt-auto">
+            <span className="text-2xl font-medium text-gray-900">₹{price}</span>
+            {originalPrice > price && (
+              <span className="text-sm text-gray-400 line-through">₹{originalPrice}</span>
+            )}
+          </div>
         </div>
+      </Link>
 
-        {/* 4. Button Area (Bottom) */}
-        <div className="mt-auto h-12">
-          <AnimatePresence mode="wait" initial={false}>
-            {quantity === 0 ? (
-              <motion.button
-                key="add-btn"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => updateQuantity(product._id, 1)}
-                className="w-full bg-[#4183cf] hover:bg-[#326bb3] text-white rounded-full py-3 px-4 font-semibold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-100"
-              >
-                <ShoppingCart size={16} />
-                Add to Cart
-              </motion.button>
-            ) : (
-              <motion.div
-                key="controls"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="flex items-center justify-between w-full bg-[#4183cf] text-white rounded-full p-1 pl-2 pr-2 shadow-lg shadow-blue-100"
-              >
-                <button 
-                  onClick={() => updateQuantity(product._id, -1)}
-                  className="w-10 h-10 flex items-center justify-center bg-[#326bb3] rounded-full text-white hover:bg-[#25528a] transition-colors"
-                >
-                  <Minus size={16} />
-                </button>
+      {/* --- ADD TO CART BUTTON SECTION --- */}
+      <div className="mt-4 px-2">
+        <AnimatePresence mode="wait" initial={false}>
+          {quantity === 0 ? (
+            <motion.button
+              key="add-btn"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleAddToCart}
+              disabled={isLoading}
+              className="w-full bg-[#4183cf] hover:bg-[#326bb3] text-white rounded-full py-3 px-4 font-semibold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-100 disabled:opacity-70"
+            >
+              {isLoading ? <Loader2 className="animate-spin" size={16}/> : <ShoppingCart size={16} />}
+              Add to Cart
+            </motion.button>
+          ) : (
+            <motion.div
+              key="controls"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex items-center justify-between w-full bg-[#4183cf] text-white rounded-full p-1 pl-2 pr-2 shadow-lg shadow-blue-100"
+            >
+              <span className="pl-3 font-medium text-sm">Added</span>
 
-                <span className="font-bold text-white text-base">
-                  {quantity}
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-base bg-white/20 w-8 h-8 rounded-full flex items-center justify-center">
+                   {quantity}
                 </span>
 
-                <button 
-                  onClick={() => updateQuantity(product._id, 1)}
+                <button
+                  onClick={handleAddToCart}
+                  disabled={isLoading}
                   className="w-10 h-10 flex items-center justify-center bg-white text-[#4183cf] rounded-full hover:bg-gray-100 transition-colors"
                 >
-                  <Plus size={16} />
+                  {isLoading ? <Loader2 className="animate-spin" size={16}/> : <Plus size={16} />}
                 </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

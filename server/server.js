@@ -38,6 +38,8 @@ app.use("/api/auth", require("./routes/authRoutes")); // Your existing auth
 app.use("/api/categories", require("./routes/categoryRoutes"));
 app.use("/api/subcategories", require("./routes/subCategoryRoutes"));
 app.use("/api/products", require("./routes/productRoutes"));
+app.use("/api/cart", require("./routes/cartRoutes"))
+
 
 // 5. Error Handling
 app.use((req, res, next) => {

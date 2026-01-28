@@ -1,4 +1,4 @@
-import Categoriessection from '@/Components/Pages/Homepage/Categories/Categoriessection'
+import Categoriessection from '@/Components/Pages/Shop/Categoriessection'
 import ProductSection from '@/Components/Pages/Homepage/Productsection/Productsection'
 import React from 'react'
 

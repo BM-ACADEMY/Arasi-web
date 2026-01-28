@@ -30,10 +30,10 @@ export const AuthProvider = ({ children }) => {
     setIsButtonLoading(true);
     try {
       await api.post("/auth/register", { name, email, password });
-      
+
       toast.success("OTP sent to your email!");
-      navigate("/verify-email", { state: { email } }); 
-      
+      navigate("/verify-email", { state: { email } });
+
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Registration failed");
@@ -47,15 +47,15 @@ export const AuthProvider = ({ children }) => {
     setIsButtonLoading(true);
     try {
       const { data } = await api.post("/auth/login", { email, password });
-      
+
       setUser(data.user);
       localStorage.setItem("user", JSON.stringify(data.user));
-      
+
       toast.success("Logged in successfully!");
-      
+
       if (data.user.role === "admin") navigate("/admin/dashboard");
       else navigate("/");
-      
+
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Login failed");
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
       const { data } = await api.post("/auth/verify-email", { email, otp });
       setUser(data.user);
       localStorage.setItem("user", JSON.stringify(data.user));
-      
+
       toast.success("Email Verified! Welcome.");
       navigate("/");
     } catch (error) {
@@ -80,29 +80,29 @@ export const AuthProvider = ({ children }) => {
 
   // --- LOGOUT ---
   const logout = async () => {
-    try { 
-      await api.get("/auth/logout"); 
+    try {
+      await api.get("/auth/logout");
       toast.success("Logged out successfully"); // <--- Added Toast Here
-    } catch (e) { 
-      console.error(e); 
+    } catch (e) {
+      console.error(e);
     }
-    
+
     // Clear local state
     setUser(null);
     localStorage.removeItem("user");
-    navigate("/login");
+    navigate("/");
   };
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        loading, 
-        isButtonLoading, 
-        login, 
-        register, 
-        verifyEmail, 
-        logout 
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isButtonLoading,
+        login,
+        register,
+        verifyEmail,
+        logout
       }}
     >
       {!loading && children}
