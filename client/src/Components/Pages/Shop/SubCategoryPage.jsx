@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '@/services/api';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Plus } from 'lucide-react';
 
 const SubCategoryPage = () => {
   const { categorySlug } = useParams();
@@ -15,12 +15,10 @@ const SubCategoryPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // 1. Get Category Details
         const catRes = await api.get(`/categories/slug/${categorySlug}`);
         const category = catRes.data.data;
         setCategoryName(category.name);
 
-        // 2. Get SubCategories
         const subRes = await api.get(`/subcategories?category=${category._id}`);
         setSubCategories(subRes.data.data);
       } catch (error) {
@@ -33,84 +31,109 @@ const SubCategoryPage = () => {
     if (categorySlug) fetchData();
   }, [categorySlug]);
 
+  // --- UPDATED LOADING SKELETON (Aligned Top, Grid Layout) ---
   if (loading) return (
-    <div className="min-h-screen bg-white pt-32 flex justify-center">
-      <div className="flex gap-6">
-        <div className="w-64 h-80 bg-gray-100 rounded-lg animate-pulse"></div>
-        <div className="w-64 h-80 bg-gray-100 rounded-lg animate-pulse"></div>
-        <div className="w-64 h-80 bg-gray-100 rounded-lg animate-pulse"></div>
+    <div className="min-h-screen bg-white pt-36 px-6">
+      <div className="max-w-[1400px] mx-auto">
+        
+        {/* Header Skeleton */}
+        <div className="flex flex-col items-center mb-16 gap-4">
+          <div className="w-32 h-4 bg-gray-100 rounded animate-pulse"></div>
+          <div className="w-64 md:w-96 h-12 bg-gray-100 rounded animate-pulse"></div>
+        </div>
+
+        {/* Grid Skeleton (Matches the 5-column layout) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-12 justify-center">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+            <div key={i} className="flex flex-col items-center gap-4">
+              <div className="w-36 h-36 md:w-48 md:h-48 bg-gray-100 rounded-full animate-pulse"></div>
+              <div className="w-24 h-4 bg-gray-100 rounded animate-pulse"></div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 
   return (
-    <section className="py-16 pt-25 bg-white min-h-screen flex justify-center w-full">
-      <div className="w-full max-w-[1400px] px-6 md:px-12">
+    <section className="py-24 pt-36 bg-white min-h-screen w-full relative">
+      
+      <div className="w-full max-w-[1400px] mx-auto px-6">
 
-        {/* Header - Left Aligned & Clean */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 pb-6 border-b border-gray-100">
-          <div>
-            <span className="text-[#4183cf] font-bold text-xs tracking-[0.2em] uppercase mb-2 block">
-              Browse Categories
-            </span>
-            <h1 className="text-4xl md:text-5xl font-serif text-gray-900 tracking-tight">
-              {categoryName}
-            </h1>
-          </div>
-          <div className="hidden md:block text-gray-500 text-sm font-medium">
-            {subCategories.length} Collections Available
-          </div>
+        {/* 1. Header */}
+        <div className="flex flex-col items-center justify-center text-center mb-16">
+          <motion.span 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-[#4183cf] font-bold text-[10px] md:text-xs tracking-[0.3em] uppercase mb-3"
+          >
+            Curated Collections
+          </motion.span>
+          
+          <motion.h1 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="text-4xl md:text-6xl font-serif text-gray-900 tracking-tight"
+          >
+            {categoryName}
+          </motion.h1>
+          
+          <div className="w-12 h-1 bg-[#4183cf] mt-6 rounded-full opacity-80" />
         </div>
 
         {subCategories.length === 0 ? (
-          <div className="text-center py-20 bg-gray-50 rounded-2xl">
-            <p className="text-xl text-gray-500 font-serif">No collections found.</p>
+          <div className="text-center py-20 bg-gray-50 rounded-3xl mx-auto max-w-2xl">
+            <p className="text-lg text-gray-400 font-serif italic">No collections found.</p>
             <Link to="/shop" className="text-[#4183cf] mt-4 inline-block font-semibold hover:underline">
-              Return to Shop
+              Back to Shop
             </Link>
           </div>
         ) : (
-          /* Structured Grid Layout */
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+          /* 2. Grid Layout */
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-14 justify-center">
             {subCategories.map((sub, index) => (
-              <Link to={`/${categorySlug}/${sub.slug}`} key={sub._id} className="block group">
+              <Link to={`/${categorySlug}/${sub.slug}`} key={sub._id} className="block group cursor-pointer relative z-0">
                 <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.4, delay: index * 0.05 }}
-                  className="flex flex-col h-full"
+                  className="flex flex-col items-center"
                 >
-                  {/* Image Container - Tall Aspect Ratio (3:4) */}
-                  <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg bg-gray-100 mb-4">
-                    <img
-                      src={sub.image || "https://via.placeholder.com/600x800?text=No+Image"}
-                      alt={sub.name}
-                      className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
-                    />
+                  {/* --- NEW HOVER DESIGN: "The Lens Effect" --- */}
+                  <div className="relative w-36 h-36 md:w-48 md:h-48 mx-auto">
+                    
+                    {/* A. Focus Ring (Expands & Fades Out on Hover) */}
+                    <div className="absolute inset-0 rounded-full border-2 border-gray-100 transition-all duration-300 group-hover:border-[#4183cf]/50 group-hover:scale-110 group-hover:opacity-0" />
+                    
+                    {/* B. Static Ring (Holds shape) */}
+                    <div className="absolute inset-0 rounded-full border border-gray-100 group-hover:border-[#4183cf] transition-colors duration-300" />
 
-                    {/* Dark Overlay on Hover */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-
-                    {/* Floating 'View' Button that appears on hover */}
-                    <div className="absolute bottom-4 left-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                      <div className="bg-white/95 backdrop-blur-sm text-center py-3 text-xs font-bold uppercase tracking-widest text-gray-900 rounded shadow-lg">
-                        View Collection
+                    {/* C. Image Container */}
+                    <div className="absolute inset-1.5 rounded-full overflow-hidden bg-white z-10 isolate">
+                      <img
+                        src={sub.image || "https://via.placeholder.com/400x400?text=Category"}
+                        alt={sub.name}
+                        className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110 group-hover:brightness-90"
+                      />
+                      
+                      {/* D. Center Interaction (Scale Up Button) */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                         <div className="bg-white text-[#4183cf] w-12 h-12 rounded-full flex items-center justify-center shadow-xl transform scale-0 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300 cubic-bezier(0.34, 1.56, 0.64, 1)">
+                           <ArrowRight size={20} />
+                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Content - Clean & Minimal */}
-                  <div className="flex flex-col">
-                    <h3 className="text-lg md:text-xl font-serif text-gray-900 font-medium leading-snug group-hover:text-[#4183cf] transition-colors">
+                  {/* --- TEXT CONTENT --- */}
+                  <div className="text-center mt-5 relative">
+                    <h3 className="text-base md:text-lg font-serif font-medium text-gray-900 group-hover:text-[#4183cf] transition-colors duration-200">
                       {sub.name}
                     </h3>
-
-                    <div className="flex items-center gap-2 mt-2 group/link">
-                      <span className="text-sm font-medium text-gray-400 group-hover:text-[#4183cf] transition-colors">
-                        Shop Now
-                      </span>
-                      <ArrowRight size={14} className="text-gray-300 group-hover:text-[#4183cf] -translate-x-1 group-hover:translate-x-0 transition-all duration-300" />
-                    </div>
+                    
+                    {/* Subtle underline animation */}
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-0 h-[1px] bg-[#4183cf] transition-all duration-300 group-hover:w-1/2 mt-1"></div>
                   </div>
 
                 </motion.div>

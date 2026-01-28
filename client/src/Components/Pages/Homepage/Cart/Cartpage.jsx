@@ -25,12 +25,12 @@ const CartPage = () => {
   const { cart, addToCart, removeFromCart } = useCart();
 
   // --- HANDLERS ---
-  const handleQuantityChange = async (productId, currentQty, change) => {
+  const handleQuantityChange = async (productId, variant, currentQty, change) => {
     // If decrementing would result in 0, don't do anything (use remove button instead)
     if (change === -1 && currentQty <= 1) return;
 
-    // Call addToCart with +1 or -1 (Backend handles the math)
-    await addToCart(productId, change);
+    // Call addToCart with +1 or -1 and include Variant
+    await addToCart(productId, change, variant);
   };
 
   const handleRemove = async (itemId) => {
@@ -73,10 +73,7 @@ const CartPage = () => {
 
   // --- CALCULATIONS ---
   const subtotal = cart.totalAmount || cart.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-
-  // UPDATED: Shipping is now always Free (0)
-  const shipping = 0;
-
+  const shipping = 0; // Free shipping logic
   const total = subtotal + shipping;
 
   return (
@@ -139,6 +136,13 @@ const CartPage = () => {
                                 {item.product.name}
                             </Link>
                         </h3>
+                        
+                        {/* --- VARIANT DISPLAY --- */}
+                        {item.variant && (
+                            <p className="text-sm text-slate-500 mt-1 font-medium bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-200">
+                                Size: {item.variant}
+                            </p>
+                        )}
                       </div>
                       <p className="text-lg font-bold text-slate-800">₹{item.price}</p>
                     </div>
@@ -147,7 +151,7 @@ const CartPage = () => {
                       {/* Quantity Controls */}
                       <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-1 border border-slate-100">
                         <button
-                          onClick={() => handleQuantityChange(item.product._id, item.quantity, -1)}
+                          onClick={() => handleQuantityChange(item.product._id, item.variant, item.quantity, -1)}
                           disabled={item.quantity <= 1}
                           className="w-8 h-8 flex items-center justify-center rounded-md bg-white text-slate-600 shadow-sm hover:text-[#4183cf] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
@@ -155,7 +159,7 @@ const CartPage = () => {
                         </button>
                         <span className="w-4 text-center text-sm font-semibold text-slate-700">{item.quantity}</span>
                         <button
-                          onClick={() => handleQuantityChange(item.product._id, item.quantity, 1)}
+                          onClick={() => handleQuantityChange(item.product._id, item.variant, item.quantity, 1)}
                           className="w-8 h-8 flex items-center justify-center rounded-md bg-white text-slate-600 shadow-sm hover:text-[#4183cf] transition-colors"
                         >
                           <Plus size={14} />
@@ -200,7 +204,6 @@ const CartPage = () => {
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>Shipping Estimate</span>
-                  {/* Logic already handles 0 as "Free" */}
                   <span className={shipping === 0 ? "text-green-600 font-medium" : ""}>
                     {shipping === 0 ? "Free" : `₹${shipping}`}
                   </span>
@@ -213,10 +216,13 @@ const CartPage = () => {
               </div>
 
               {/* Checkout Button */}
-              <button className="w-full py-4 bg-[#4183cf] hover:bg-[#357abd] text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mb-4">
-                Proceed to Checkout
-                <ArrowRight size={20} />
-              </button>
+              <Link
+  to="/checkout"
+  className="w-full py-4 bg-[#4183cf] hover:bg-[#357abd] text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mb-4"
+>
+  Proceed to Checkout
+  <ArrowRight size={20} />
+</Link>
 
               {/* Trust Badges */}
               <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-slate-100">

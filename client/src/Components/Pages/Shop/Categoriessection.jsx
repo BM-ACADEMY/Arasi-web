@@ -35,7 +35,7 @@ const CategoriesSection = () => {
   if (!categories.length) return null; // or a loader
 
   return (
-    <section className="py-16 bg-white flex justify-center w-full">
+    <section className="pt-17 pb-6 bg-white flex justify-center w-full">
       <div className="w-full max-w-7xl px-6 md:px-12">
         
         {/* Header */}
@@ -57,7 +57,7 @@ const CategoriesSection = () => {
         </div>
 
         {/* Carousel */}
-        <div ref={scrollContainerRef} className="flex gap-6 md:gap-10 overflow-x-auto pb-10 scrollbar-hide px-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div ref={scrollContainerRef} className="flex gap-6 md:gap-10 overflow-x-auto scrollbar-hide px-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {categories.map((category, index) => (
             // WRAP WITH LINK to /slug
             <Link to={`/${category.slug}`} key={category._id || index}>

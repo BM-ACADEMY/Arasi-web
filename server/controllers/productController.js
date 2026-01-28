@@ -48,12 +48,25 @@ exports.createProduct = async (req, res) => {
   }
 };
 
+// controllers/productController.js
+
 exports.getAllProducts = async (req, res) => {
   try {
     const { keyword, category, subCategory } = req.query;
     let query = { isActive: true };
 
-    if (keyword) query.$text = { $search: keyword };
+    // --- UPDATED SEARCH LOGIC ---
+    if (keyword) {
+      // Use Regex for partial match (letter-by-letter)
+      // "i" flag makes it case-insensitive
+      query.$or = [
+        { name: { $regex: keyword, $options: "i" } },
+        { brand: { $regex: keyword, $options: "i" } },
+        // Optional: Search in subCategory if needed, but requires lookup in simple queries
+      ];
+    }
+    // ---------------------------
+
     if (category) query.category = category;
     if (subCategory) query.subCategory = subCategory;
 
@@ -62,12 +75,21 @@ exports.getAllProducts = async (req, res) => {
       .populate("subCategory", "name")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ success: true, count: products.length, data: products.map(formatProduct) });
+    // Format the image URLs before sending
+    const formatProduct = (product) => ({
+      ...product._doc,
+      images: product.images.map(img => `${process.env.SERVER_URL}/${img}`)
+    });
+
+    res.status(200).json({ 
+      success: true, 
+      count: products.length, 
+      data: products.map(formatProduct) 
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 exports.getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate("category", "name").populate("subCategory", "name");

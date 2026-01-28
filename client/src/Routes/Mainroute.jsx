@@ -17,6 +17,8 @@ import ProductListingPage from "@/Components/Pages/Shop/ProductListingPage";
 import ProductDetailsPage from "@/Components/Pages/Shop/ProductDetailsPage"; // New Import
 import AdminRoutes from "./AdminRoutes";
 import CartPage from "@/Components/Pages/Homepage/Cart/Cartpage";
+import CheckoutPage from "@/Components/Checkoutpage/Checkoutpage";
+import OrderPage from "@/Components/Order/Orderpage";
 
 // Dummy Pages
 const Products = () => <div className="pt-24 text-center">Products Page</div>;
@@ -59,6 +61,12 @@ function Mainroute() {
 
         {/* 3. SubCategory Click -> Shows Products */}
         <Route path="/:categorySlug/:subCategorySlug" element={<ProductListingPage />} />
+        
+        
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/orders" element={<OrderPage />} />
+
+        
       </Route>
 
       {/* Admin Routes */}

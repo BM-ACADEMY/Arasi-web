@@ -27,4 +27,9 @@ export const adminSidebarItems = [
     path: "/admin/products",
     icon: ShoppingBag,
   },
+  {
+    name: "Orders",
+    path: "/admin/orders",
+    icon: ShoppingBag,
+  },
 ];

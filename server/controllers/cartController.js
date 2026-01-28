@@ -20,11 +20,11 @@ exports.getCart = async (req, res) => {
   }
 };
 
-// @desc    Add Item to Cart
+// @desc    Add Item to Cart (Handles Variants)
 // @route   POST /api/cart/add
 exports.addToCart = async (req, res) => {
   try {
-    const { productId, quantity } = req.body;
+    const { productId, quantity, variant } = req.body; 
     const qty = Number(quantity);
 
     // 1. Fetch Product to get current price
@@ -33,43 +33,66 @@ exports.addToCart = async (req, res) => {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
 
-    // Use the first variant price or a base price
-    const price = product.variants && product.variants.length > 0
-      ? product.variants[0].price
-      : 0; // fallback
+    // Determine Price: If a variant matches the requested variant string, use that price
+    let price = product.price;
+    if (product.variants && product.variants.length > 0) {
+      const matchedVariant = product.variants.find(v => (v.label || v.unit) === variant);
+      if (matchedVariant && matchedVariant.price) {
+        price = matchedVariant.price;
+      } else {
+        // Fallback to first variant price if specific variant not found/has no price
+        price = product.variants[0].price;
+      }
+    }
 
     // 2. Find Cart for User
     let cart = await Cart.findOne({ user: req.user.id });
 
     if (cart) {
-      // Check if product already exists in cart
-      const itemIndex = cart.items.findIndex((item) => item.product.toString() === productId);
+      // Check if product AND variant already exist
+      const itemIndex = cart.items.findIndex((item) => 
+        item.product.toString() === productId && item.variant === variant
+      );
 
       if (itemIndex > -1) {
-        // Product exists, update quantity
-        cart.items[itemIndex].quantity += qty;
+        // Update existing item quantity
+        const newQuantity = cart.items[itemIndex].quantity + qty;
+        if (newQuantity <= 0) {
+          cart.items.splice(itemIndex, 1);
+        } else {
+          cart.items[itemIndex].quantity = newQuantity;
+        }
       } else {
-        // Product does not exist, push to items
-        cart.items.push({ product: productId, quantity: qty, price });
+        // New item: Push with variant info
+        if (qty > 0) {
+          cart.items.push({ product: productId, quantity: qty, price, variant });
+        }
       }
     } else {
       // Create new cart
-      cart = await Cart.create({
-        user: req.user.id,
-        items: [{ product: productId, quantity: qty, price }],
-      });
+      if (qty > 0) {
+        cart = await Cart.create({
+          user: req.user.id,
+          items: [{ product: productId, quantity: qty, price, variant }],
+        });
+      } else {
+        return res.status(400).json({ success: false, message: "Invalid quantity" });
+      }
     }
 
-    // 3. Recalculate Total Amount
-    cart.totalAmount = cart.items.reduce((acc, item) => acc + item.quantity * item.price, 0);
+    // 3. Recalculate Total & Save
+    if (cart) {
+      cart.totalAmount = cart.items.reduce((acc, item) => acc + item.quantity * item.price, 0);
+      await cart.save();
+      
+      const populatedCart = await Cart.findById(cart._id).populate("items.product", "name images slug");
+      res.status(200).json({ success: true, message: "Cart updated", data: populatedCart });
+    } else {
+      res.status(200).json({ success: true, items: [], totalAmount: 0 });
+    }
 
-    await cart.save();
-
-    // Populate for frontend response
-    const populatedCart = await Cart.findById(cart._id).populate("items.product", "name images slug");
-
-    res.status(200).json({ success: true, message: "Added to cart", data: populatedCart });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -81,16 +104,14 @@ exports.removeFromCart = async (req, res) => {
     const cart = await Cart.findOne({ user: req.user.id });
     if (!cart) return res.status(404).json({ message: "Cart not found" });
 
+    // Filter by unique Item ID (MongoDB _id of the item inside the array)
     cart.items = cart.items.filter((item) => item._id.toString() !== req.params.itemId);
 
-    // Recalculate Total
     cart.totalAmount = cart.items.reduce((acc, item) => acc + item.quantity * item.price, 0);
 
     await cart.save();
 
-    // Return full cart so frontend updates instantly
     const populatedCart = await Cart.findById(cart._id).populate("items.product", "name images slug");
-
     res.status(200).json({ success: true, data: populatedCart });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

@@ -2,37 +2,45 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, ShoppingCart, Minus, Plus, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useCart } from '@/context/CartContext'; // <--- Import Context
+import { useCart } from '@/context/CartContext';
 
 const ProductCard = ({ product }) => {
-  const { addToCart, getItemQuantity } = useCart(); // Get context functions
+  // 1. Get the updated functions from Context
+  const { addToCart, decreaseQty, getItemQuantity } = useCart();
   const [quantity, setQuantity] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Sync local state with global cart state
+  // 2. Identify the "Default" Variant (First one)
+  const defaultVariant = product.variants?.[0];
+  const variantLabel = defaultVariant?.label || defaultVariant?.unit || null;
+  
+  // 3. Get Price from the default variant
+  const price = defaultVariant?.price || product.price || 0;
+  const originalPrice = product.originalPrice || (price * 1.2).toFixed(0);
+  const imageUrl = product.images?.[0] || "https://via.placeholder.com/300";
+
+  // 4. Sync State: Check quantity SPECIFICALLY for this variant
   useEffect(() => {
-    const qty = getItemQuantity(product._id);
+    // Pass variantLabel to see how many of *this specific size* are in cart
+    const qty = getItemQuantity(product._id, variantLabel);
     setQuantity(qty);
-  }, [getItemQuantity, product._id]);
+  }, [getItemQuantity, product._id, variantLabel]);
 
-  // Handler for Adding Item
-  const handleAddToCart = async (e) => {
-    e.preventDefault(); // Stop navigation to detail page
+  const handleIncrease = async (e) => {
+    e.preventDefault();
     setIsLoading(true);
-
-    // Call backend
-    const success = await addToCart(product._id, 1);
-
-    if (success) {
-      // Logic handled by context update, but we can optimistically update local state if needed
-      // The useEffect above will catch the change from context
-    }
+    // 5. Pass variantLabel to addToCart
+    await addToCart(product._id, 1, variantLabel);
     setIsLoading(false);
   };
 
-  const imageUrl = product.images?.[0] || "https://via.placeholder.com/300";
-  const price = product.variants?.[0]?.price || 0;
-  const originalPrice = product.originalPrice || (price * 1.2).toFixed(0);
+  const handleDecrease = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    // 6. Pass variantLabel to decreaseQty
+    await decreaseQty(product._id, variantLabel);
+    setIsLoading(false);
+  };
 
   return (
     <motion.div
@@ -42,6 +50,7 @@ const ProductCard = ({ product }) => {
       className="bg-white rounded-[2rem] p-4 shadow-sm hover:shadow-xl transition-shadow duration-300 flex flex-col relative h-full group"
     >
       <Link to={`/product/${product.slug}`} className="block h-full flex flex-col">
+        {/* Image Container */}
         <div className="relative w-full aspect-square rounded-[1.5rem] bg-gray-50 overflow-hidden mb-4">
           <img
             src={imageUrl}
@@ -50,6 +59,7 @@ const ProductCard = ({ product }) => {
           />
         </div>
 
+        {/* Text Content */}
         <div className="px-2 flex flex-col flex-grow">
           <h3 className="font-serif text-gray-900 tracking-tight text-xl font-medium leading-tight mb-2 line-clamp-2">
             {product.name}
@@ -61,6 +71,7 @@ const ProductCard = ({ product }) => {
           </div>
 
           <div className="flex items-baseline gap-2 mb-4 mt-auto">
+            {/* Display the price of the first variant */}
             <span className="text-2xl font-medium text-gray-900">₹{price}</span>
             {originalPrice > price && (
               <span className="text-sm text-gray-400 line-through">₹{originalPrice}</span>
@@ -69,8 +80,8 @@ const ProductCard = ({ product }) => {
         </div>
       </Link>
 
-      {/* --- ADD TO CART BUTTON SECTION --- */}
-      <div className="mt-4 px-2">
+      {/* Buttons */}
+      <div className="mt-2 px-2 h-12 relative z-10">
         <AnimatePresence mode="wait" initial={false}>
           {quantity === 0 ? (
             <motion.button
@@ -79,7 +90,7 @@ const ProductCard = ({ product }) => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               whileTap={{ scale: 0.95 }}
-              onClick={handleAddToCart}
+              onClick={handleIncrease}
               disabled={isLoading}
               className="w-full bg-[#4183cf] hover:bg-[#326bb3] text-white rounded-full py-3 px-4 font-semibold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-100 disabled:opacity-70"
             >
@@ -92,23 +103,27 @@ const ProductCard = ({ product }) => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="flex items-center justify-between w-full bg-[#4183cf] text-white rounded-full p-1 pl-2 pr-2 shadow-lg shadow-blue-100"
+              className="flex items-center justify-between w-full bg-[#4183cf] text-white rounded-full p-1 shadow-lg shadow-blue-100"
             >
-              <span className="pl-3 font-medium text-sm">Added</span>
+              <button
+                onClick={handleDecrease}
+                disabled={isLoading}
+                className="w-10 h-10 flex items-center justify-center bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+              >
+                 <Minus size={16} />
+              </button>
 
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-white text-base bg-white/20 w-8 h-8 rounded-full flex items-center justify-center">
-                   {quantity}
-                </span>
+              <span className="font-bold text-white text-base w-8 text-center tabular-nums">
+                {isLoading ? <Loader2 className="animate-spin inline" size={14} /> : quantity}
+              </span>
 
-                <button
-                  onClick={handleAddToCart}
-                  disabled={isLoading}
-                  className="w-10 h-10 flex items-center justify-center bg-white text-[#4183cf] rounded-full hover:bg-gray-100 transition-colors"
-                >
-                  {isLoading ? <Loader2 className="animate-spin" size={16}/> : <Plus size={16} />}
-                </button>
-              </div>
+              <button
+                onClick={handleIncrease}
+                disabled={isLoading}
+                className="w-10 h-10 flex items-center justify-center bg-white text-[#4183cf] rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <Plus size={16} />
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
