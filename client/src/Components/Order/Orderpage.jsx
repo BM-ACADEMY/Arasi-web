@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "@/services/api";
-import { 
-  Package, Truck, CheckCircle, Clock, ChevronRight, 
+import {
+  Package, Truck, CheckCircle, Clock, ChevronRight,
   ShoppingBag, X, MapPin, AlertCircle, ArrowRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,14 +21,22 @@ const getStatusColor = (status) => {
     case "Delivered": return "bg-green-100 text-green-700 border-green-200";
     case "Shipped": return "bg-blue-100 text-blue-700 border-blue-200";
     case "Cancelled": return "bg-red-100 text-red-700 border-red-200";
-    default: return "bg-yellow-100 text-yellow-700 border-yellow-200"; 
+    default: return "bg-yellow-100 text-yellow-700 border-yellow-200";
   }
+};
+
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return "https://via.placeholder.com/80";
+  if (imagePath.startsWith("http")) return imagePath;
+  // Dynamically get base URL from VITE_API_URL (removes '/api' from end)
+  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '');
+  return `${baseUrl}/${imagePath}`;
 };
 
 // --- ANIMATION VARIANTS ---
 const modalVariants = {
   hidden: { opacity: 0, scale: 0.95, y: 20 },
-  visible: { 
+  visible: {
     opacity: 1, scale: 1, y: 0,
     transition: { type: "spring", damping: 25, stiffness: 300 }
   },
@@ -69,7 +77,7 @@ const CancelOrderModal = ({ isOpen, onClose, onConfirm, isCancelling }) => {
       finalReason = customReason;
     }
     if (!finalReason) return toast.error("Please select a reason.");
-    
+
     onConfirm(finalReason);
   };
 
@@ -85,12 +93,12 @@ const CancelOrderModal = ({ isOpen, onClose, onConfirm, isCancelling }) => {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <motion.div 
+      <motion.div
         variants={overlayVariants} initial="hidden" animate="visible" exit="exit"
         className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}
       />
-      
-      <motion.div 
+
+      <motion.div
         variants={modalVariants} initial="hidden" animate="visible" exit="exit"
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
       >
@@ -109,11 +117,11 @@ const CancelOrderModal = ({ isOpen, onClose, onConfirm, isCancelling }) => {
 
           <div className="space-y-3 mb-6">
             {reasons.map((reason) => (
-              <label 
-                key={reason} 
+              <label
+                key={reason}
                 className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                  selectedReason === reason 
-                    ? "border-red-500 bg-red-50 text-red-700" 
+                  selectedReason === reason
+                    ? "border-red-500 bg-red-50 text-red-700"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
               >
@@ -122,10 +130,10 @@ const CancelOrderModal = ({ isOpen, onClose, onConfirm, isCancelling }) => {
                 }`}>
                   {selectedReason === reason && <div className="w-2 h-2 rounded-full bg-red-500" />}
                 </div>
-                <input 
-                  type="radio" 
-                  name="cancelReason" 
-                  value={reason} 
+                <input
+                  type="radio"
+                  name="cancelReason"
+                  value={reason}
                   checked={selectedReason === reason}
                   onChange={(e) => setSelectedReason(e.target.value)}
                   className="hidden"
@@ -155,13 +163,13 @@ const CancelOrderModal = ({ isOpen, onClose, onConfirm, isCancelling }) => {
           </div>
 
           <div className="flex gap-3">
-            <button 
+            <button
               onClick={onClose}
               className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors"
             >
               Keep Order
             </button>
-            <button 
+            <button
               onClick={handleSubmit}
               disabled={isCancelling}
               className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-70 flex justify-center items-center gap-2 shadow-lg shadow-red-200"
@@ -198,7 +206,7 @@ const TrackOrderModal = ({ order, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-      <motion.div 
+      <motion.div
         variants={modalVariants} initial="hidden" animate="visible" exit="exit"
         className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
       >
@@ -250,7 +258,7 @@ const TrackOrderModal = ({ order, onClose }) => {
                })}
             </div>
           )}
-          
+
           <div className="mt-10 pt-6 border-t border-gray-100 flex gap-4">
              <div className="p-3 bg-gray-50 text-gray-700 rounded-xl h-fit"><MapPin size={22} /></div>
              <div>
@@ -268,13 +276,13 @@ const TrackOrderModal = ({ order, onClose }) => {
 const OrderPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Modal States
   const [selectedOrder, setSelectedOrder] = useState(null); // For Tracking
   const [cancelOrderData, setCancelOrderData] = useState(null); // For Cancelling (stores order to cancel)
   const [isCancelling, setIsCancelling] = useState(false); // API Loading State
 
-  const SERVER_URL = "http://localhost:5000";
+  // NOTE: Removed hardcoded SERVER_URL, now using getImageUrl helper
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -303,7 +311,7 @@ const OrderPage = () => {
       const { data } = await api.put(`/orders/${cancelOrderData._id}/cancel`, { reason });
       if (data.success) {
         toast.success("Order cancelled successfully");
-        setOrders((prev) => 
+        setOrders((prev) =>
           prev.map((o) => o._id === cancelOrderData._id ? { ...o, orderStatus: "Cancelled", cancellationReason: reason } : o)
         );
         setCancelOrderData(null); // Close modal
@@ -343,7 +351,7 @@ const OrderPage = () => {
           <div className="space-y-6">
             {orders.map((order) => (
               <div key={order._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-                
+
                 {/* Header */}
                 <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex flex-wrap items-center justify-between gap-4">
                   <div className="flex gap-8">
@@ -369,7 +377,13 @@ const OrderPage = () => {
                   {order.orderItems.map((item, idx) => (
                     <div key={idx} className="flex items-center gap-6 mb-6 last:mb-0">
                       <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
-                        <img src={item.image ? `${SERVER_URL}/${item.image}` : "https://via.placeholder.com/80"} alt={item.name} className="h-full w-full object-cover" />
+                        {/* FIXED: Using getImageUrl helper */}
+                        <img
+                          src={getImageUrl(item.image)}
+                          alt={item.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {e.target.src = "https://via.placeholder.com/80"}}
+                        />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-bold text-gray-900">{item.name}</h4>
@@ -386,11 +400,11 @@ const OrderPage = () => {
                 {/* Footer */}
                 <div className="px-6 py-4 bg-gray-50/30 border-t border-gray-100 flex flex-wrap justify-between items-center gap-4">
                   <p className="text-sm font-medium text-gray-500">Total Paid: <span className="text-gray-900 font-bold">₹{order.totalAmount.toLocaleString()}</span></p>
-                  
+
                   <div className="flex items-center gap-3">
                     {/* CANCEL BUTTON */}
                     {order.orderStatus === "Processing" && (
-                      <button 
+                      <button
                         onClick={() => handleCancelClick(order)}
                         className="px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 border border-transparent hover:border-red-100"
                       >
@@ -399,7 +413,7 @@ const OrderPage = () => {
                     )}
 
                     {/* TRACK BUTTON */}
-                    <button 
+                    <button
                       onClick={() => setSelectedOrder(order)}
                       className="flex items-center gap-2 text-sm font-bold text-white bg-black hover:bg-gray-800 px-5 py-2 rounded-lg transition-all shadow-md shadow-gray-200 hover:shadow-lg hover:-translate-y-0.5"
                     >
@@ -418,7 +432,7 @@ const OrderPage = () => {
             <TrackOrderModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
           )}
           {cancelOrderData && (
-            <CancelOrderModal 
+            <CancelOrderModal
               isOpen={!!cancelOrderData}
               onClose={() => setCancelOrderData(null)}
               onConfirm={processCancellation}

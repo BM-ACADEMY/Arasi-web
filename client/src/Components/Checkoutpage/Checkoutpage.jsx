@@ -5,6 +5,15 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { Loader2, ShieldCheck, MapPin } from "lucide-react";
 
+// Helper to construct image URL
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return "";
+  if (imagePath.startsWith("http")) return imagePath;
+  // Dynamically get base URL from VITE_API_URL (removes '/api' from end)
+  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '');
+  return `${baseUrl}/${imagePath}`;
+};
+
 const CheckoutPage = () => {
   const { cart, fetchCart } = useCart();
   const navigate = useNavigate();
@@ -26,7 +35,7 @@ const CheckoutPage = () => {
   // --- PAYMENT HANDLER ---
   const handlePayment = async (e) => {
     e.preventDefault();
-    
+
     // Basic Validation
     if (!address.address || !address.phone || !address.pincode) {
       toast.error("Please fill all address fields");
@@ -38,7 +47,7 @@ const CheckoutPage = () => {
     try {
       // 1. Create Order on Backend
       const { data: orderData } = await api.post("/orders/create-order");
-      
+
       if (!orderData.success) {
         throw new Error("Order creation failed");
       }
@@ -98,57 +107,57 @@ const CheckoutPage = () => {
   return (
     <div className="min-h-screen pt-24 pb-12 bg-slate-50 px-4">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
+
         {/* LEFT: Shipping Form */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-6">
             <MapPin className="text-[#4183cf]" />
             <h2 className="text-xl font-bold text-slate-800">Shipping Address</h2>
           </div>
-          
+
           <form id="checkout-form" onSubmit={handlePayment} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Street Address</label>
-              <input 
-                name="address" required 
+              <input
+                name="address" required
                 value={address.address} onChange={handleChange}
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="123 Main St, Apartment 4B"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
-                <input 
-                  name="city" required 
+                <input
+                  name="city" required
                   value={address.city} onChange={handleChange}
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
-                <input 
-                  name="state" required 
+                <input
+                  name="state" required
                   value={address.state} onChange={handleChange}
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Pincode</label>
-                <input 
+                <input
                   name="pincode" required type="number"
                   value={address.pincode} onChange={handleChange}
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
-                <input 
+                <input
                   name="phone" required type="tel"
                   value={address.phone} onChange={handleChange}
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
             </div>
@@ -158,14 +167,15 @@ const CheckoutPage = () => {
         {/* RIGHT: Order Summary */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
           <h2 className="text-xl font-bold text-slate-800 mb-6">Order Summary</h2>
-          
+
           <div className="space-y-4 mb-6 max-h-60 overflow-y-auto custom-scrollbar">
             {cart.items.map((item) => (
               <div key={item._id} className="flex gap-4 items-center">
-                <img 
-                  src={item.product.images?.[0] || ""} 
-                  alt={item.product.name} 
+                <img
+                  src={getImageUrl(item.product.images?.[0])}
+                  alt={item.product.name}
                   className="w-16 h-16 rounded-md object-cover bg-gray-50"
+                  onError={(e) => {e.target.src = "https://via.placeholder.com/150"}}
                 />
                 <div>
                   <h4 className="font-semibold text-sm text-slate-800">{item.product.name}</h4>
@@ -193,8 +203,8 @@ const CheckoutPage = () => {
             </div>
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             form="checkout-form"
             disabled={loading}
             className="w-full mt-6 py-4 bg-[#4183cf] hover:bg-[#357abd] text-white rounded-xl font-bold shadow-lg shadow-blue-200 flex items-center justify-center gap-2 transition-all disabled:opacity-70"

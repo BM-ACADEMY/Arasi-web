@@ -13,7 +13,7 @@ const ProductCard = ({ product }) => {
   // 2. Identify the "Default" Variant (First one)
   const defaultVariant = product.variants?.[0];
   const variantLabel = defaultVariant?.label || defaultVariant?.unit || null;
-  
+
   // 3. Get Price from the default variant
   const price = defaultVariant?.price || product.price || 0;
   const originalPrice = product.originalPrice || (price * 1.2).toFixed(0);
