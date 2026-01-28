@@ -24,7 +24,7 @@ app.use(cors({
   credentials: true
 }));
 
-if (process.env.NODE_ENV === "development") {
+if (process.env.NODE_ENV === "production") {
   app.use(morgan("dev"));
 }
 
@@ -55,7 +55,7 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({
     success: false,
     message: err.message,
-    stack: process.env.NODE_ENV === "development" ? err.stack : null,
+    stack: process.env.NODE_ENV === "production" ? err.stack : null,
   });
 });
 
