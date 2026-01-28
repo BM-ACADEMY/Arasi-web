@@ -55,7 +55,7 @@ const SearchBar = ({ isOpen, onToggle }) => {
         !event.target.closest(".search-results-dropdown")
       ) {
         onToggle(false);
-        setQuery(""); 
+        setQuery("");
         setResults([]);
       }
     };
@@ -133,7 +133,7 @@ const SearchBar = ({ isOpen, onToggle }) => {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                
+
                 {/* Text Info */}
                 <div className="flex flex-col min-w-0">
                   <span className="text-sm font-semibold text-gray-800 truncate">

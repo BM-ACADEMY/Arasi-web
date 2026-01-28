@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { 
-  register, 
-  login, 
-  logout, 
-  forgotPassword, 
-  resendOtp, 
+const {
+  register,
+  login,
+  logout,
+  forgotPassword,
+  resendOtp,
   resetPassword ,
   verifyEmail
 } = require("../controllers/authController");
@@ -18,6 +18,7 @@ router.post("/forgot-password", forgotPassword);
 router.post("/resend-otp", resendOtp);
 router.post("/reset-password", resetPassword);
 router.post("/verify-email", verifyEmail);
+
 
 // Example Protected Admin Route
 router.get("/admin-dashboard", protect, authorize("admin"), (req, res) => {

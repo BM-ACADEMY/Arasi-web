@@ -40,6 +40,7 @@ app.use("/api/subcategories", require("./routes/subCategoryRoutes"));
 app.use("/api/products", require("./routes/productRoutes"));
 app.use("/api/cart", require("./routes/cartRoutes"))
 app.use("/api/orders", require("./routes/orderRoutes"));
+app.use("/api/address", require("./routes/addressRoutes"));
 
 
 // 5. Error Handling

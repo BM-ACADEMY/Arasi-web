@@ -73,10 +73,10 @@ exports.register = async (req, res) => {
     }).catch(err => console.error("Background Email Error:", err.message));
 
     // 6. Respond Immediately
-    res.status(200).json({ 
-      success: true, 
-      message: "OTP sent. Please verify.", 
-      email: user.email 
+    res.status(200).json({
+      success: true,
+      message: "OTP sent. Please verify.",
+      email: user.email
     });
 
   } catch (error) {
@@ -179,7 +179,7 @@ exports.forgotPassword = async (req, res) => {
 
     // 4. Send Email
     const message = `Your Password Reset OTP is: ${otp}\n\nIt is valid for 10 minutes.`;
-    
+
     try {
       await sendEmail({
         email: user.email,
@@ -269,3 +269,5 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+

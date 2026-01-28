@@ -81,10 +81,10 @@ exports.getAllProducts = async (req, res) => {
       images: product.images.map(img => `${process.env.SERVER_URL}/${img}`)
     });
 
-    res.status(200).json({ 
-      success: true, 
-      count: products.length, 
-      data: products.map(formatProduct) 
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      data: products.map(formatProduct)
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -132,7 +132,7 @@ exports.updateProduct = async (req, res) => {
     if (req.body.variants && typeof req.body.variants === 'string') {
         req.body.variants = JSON.parse(req.body.variants);
     }
-    
+
     // Parse Details Update
     if (req.body.details && typeof req.body.details === 'string') {
         req.body.details = JSON.parse(req.body.details);

@@ -61,12 +61,12 @@ function Mainroute() {
 
         {/* 3. SubCategory Click -> Shows Products */}
         <Route path="/:categorySlug/:subCategorySlug" element={<ProductListingPage />} />
-        
-        
+
+
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/orders" element={<OrderPage />} />
 
-        
+
       </Route>
 
       {/* Admin Routes */}

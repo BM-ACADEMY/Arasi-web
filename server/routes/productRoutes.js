@@ -12,6 +12,8 @@ const {
 
 const router = express.Router();
 
+
+
 router.route("/")
   .get(getAllProducts) // Search via query params ?keyword=abc
   .post(protect, authorize("admin"), upload.array("images", 5), createProduct);
