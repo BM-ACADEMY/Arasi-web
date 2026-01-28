@@ -11,6 +11,7 @@ import CategoryPage from "@/Admin/Pages/Categories/Categories";
 import Subcategories from "@/Admin/Pages/Subcategories/Subcategories";
 import Product from "@/Admin/Pages/Product/Product";
 import AdminOrderPage from "@/Admin/Pages/Order/Order";
+import AdminBanner from "@/Admin/Pages/AdminBanner/AdminBanner";
 
 const AdminRoutes = () => {
   return (
@@ -32,6 +33,7 @@ const AdminRoutes = () => {
         {/* Product Management */}
         <Route path="products" element={<Product />} />
         <Route path="orders" element={<AdminOrderPage />} />
+        <Route path="banner" element={<AdminBanner />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="dashboard" replace />} />

@@ -3,7 +3,9 @@ import {
   LayoutDashboard,
   Layers,
   ListTree,
-  ShoppingBag
+  ShoppingBag,
+  Box,
+  ImageIcon
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -30,6 +32,11 @@ export const adminSidebarItems = [
   {
     name: "Orders",
     path: "/admin/orders",
-    icon: ShoppingBag,
+    icon: Box,
+  },
+  {
+    name: "Banner",
+    path: "/admin/banner",
+    icon: ImageIcon,
   },
 ];
