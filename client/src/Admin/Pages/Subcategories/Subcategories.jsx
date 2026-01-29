@@ -126,18 +126,34 @@ const Subcategories = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     if (!parentCategoryId) {
       toast.error("Please select a parent category");
       return;
     }
 
-    const loadingToast = toast.loading("Saving...");
+    // 1. Prepare Data (Do this first, but don't show toast yet)
     const formData = new FormData();
     formData.append("name", name);
-    formData.append("category", parentCategoryId); // Send Parent ID
+    formData.append("category", parentCategoryId);
     if (imageFile) formData.append("image", imageFile);
+
+    // 2. Check Limit (Max 5 per Category)
+    // We check this BEFORE starting the loading toast
+    if (!isEditing) {
+      const count = subCategories.filter(
+        (sub) => sub.category?._id === parentCategoryId
+      ).length;
+
+      if (count >= 5) {
+        toast.error("Limit reached: This category already has 5 subcategories.");
+        return; // Return here. Since toast.loading hasn't run yet, no stuck toast!
+      }
+    }
+
+    // 3. Start Loading Toast (Only if validation passes)
+    const loadingToast = toast.loading("Saving...");
 
     try {
       if (isEditing) {

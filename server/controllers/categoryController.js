@@ -25,9 +25,20 @@ const deleteImage = (relativePath) => {
   }
 };
 
-// @route   POST /api/categories
+// controllers/categoryController.js
+
 exports.createCategory = async (req, res) => {
   try {
+    // --- NEW LOGIC: Check Limit (Max 10) ---
+    const categoryCount = await Category.countDocuments();
+    if (categoryCount >= 10) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Limit reached: You can only create up to 10 categories." 
+      });
+    }
+    // ---------------------------------------
+
     const { name } = req.body;
     let imagePath = "";
 

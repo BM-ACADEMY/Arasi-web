@@ -1,4 +1,7 @@
+// backend/server.js
 const express = require("express");
+const http = require("http"); // <--- Import HTTP
+const { Server } = require("socket.io"); // <--- Import Socket.io
 const dotenv = require("dotenv");
 const morgan = require("morgan");
 const helmet = require("helmet");
@@ -13,8 +16,31 @@ connectDB();
 
 const app = express();
 
+// --- SOCKET.IO SETUP ---
+const server = http.createServer(app); // Create HTTP server manually
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CLIENT_URL, 
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+});
+
+// Store `io` in app so we can use it in controllers
+app.set("io", io);
+
+io.on("connection", (socket) => {
+  // Optional: Log connection for debugging
+  // console.log("Socket connected:", socket.id);
+  
+  socket.on("disconnect", () => {
+    // console.log("Socket disconnected");
+  });
+});
+// -----------------------
+
 // 2. Middleware
-app.use(helmet({ crossOriginResourcePolicy: false })); // Allow loading images across origins
+app.use(helmet({ crossOriginResourcePolicy: false })); 
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -28,22 +54,20 @@ if (process.env.NODE_ENV === "production") {
   app.use(morgan("dev"));
 }
 
-// 3. Static Files (CRITICAL FOR IMAGES)
-// This makes http://localhost:5000/uploads/... accessible
+// 3. Static Files
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // 4. Routes
 app.get("/", (req, res) => res.send("API Running..."));
-app.use("/api/auth", require("./routes/authRoutes")); // Your existing auth
+app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/categories", require("./routes/categoryRoutes"));
 app.use("/api/subcategories", require("./routes/subCategoryRoutes"));
 app.use("/api/products", require("./routes/productRoutes"));
-app.use("/api/cart", require("./routes/cartRoutes"))
+app.use("/api/cart", require("./routes/cartRoutes"));
 app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/address", require("./routes/addressRoutes"));
 app.use("/api/banner", require("./routes/bannerRoutes"));
 app.use("/api/reviews", require("./routes/reviewRoutes"));
-
 
 // 5. Error Handling
 app.use((req, res, next) => {
@@ -62,8 +86,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 6. Start Server
+// 6. Start Server (Note: We listen on 'server', not 'app')
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });

@@ -57,6 +57,11 @@ const Categories = () => {
 
   // ─── Form Handlers ────────────────────────────────────────
   const openAddModal = () => {
+
+    if (categories.length >= 10) {
+      toast.error("Limit reached: You can only create up to 10 categories.");
+      return; 
+    }
     setIsEditing(false);
     setCurrentId(null);
     setName("");

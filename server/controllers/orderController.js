@@ -1,8 +1,8 @@
+// backend/controllers/orderController.js
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const Order = require("../models/orderModel");
 const Cart = require("../models/cartModel");
-const Product = require("../models/productModel");
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -19,21 +19,15 @@ exports.createRazorpayOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: "No items in cart" });
     }
 
-    // Calculate Total securely on backend
     const totalAmount = cart.totalAmount;
-
     const options = {
-      amount: totalAmount * 100, // Amount in paise (multiply by 100)
+      amount: totalAmount * 100,
       currency: "INR",
       receipt: `receipt_${Date.now()}`,
     };
 
     const order = await razorpay.orders.create(options);
-
-    res.status(200).json({
-      success: true,
-      order, 
-    });
+    res.status(200).json({ success: true, order });
   } catch (error) {
     console.error("Razorpay Error:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -62,7 +56,7 @@ exports.verifyPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid Signature" });
     }
 
-    // 2. Fetch Cart Items
+    // 2. Fetch Cart
     const cart = await Cart.findOne({ user: req.user.id }).populate("items.product");
     
     // 3. Construct Order Items
@@ -94,48 +88,44 @@ exports.verifyPayment = async (req, res) => {
     cart.totalAmount = 0;
     await cart.save();
 
-    res.status(201).json({ success: true, message: "Order placed successfully", order });
+    // --- SOCKET.IO NOTIFICATION ---
+    const io = req.app.get("io"); // Retrieve io instance
+    io.emit("newOrder", {
+      _id: order._id,
+      customerName: req.user.name, 
+      amount: order.totalAmount,
+      createdAt: new Date()
+    });
+    // ------------------------------
 
+    res.status(201).json({ success: true, message: "Order placed successfully", order });
   } catch (error) {
     console.error("Verification Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-
+// ... (Rest of your controller functions: getUserOrders, getAllOrders, etc. remain unchanged)
 exports.getUserOrders = async (req, res) => {
   try {
-    // Find orders where 'user' matches the logged-in user ID
-    const orders = await Order.find({ user: req.user.id })
-      .sort({ createdAt: -1 }); // Newest first
-
-    res.status(200).json({
-      success: true,
-      orders
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ... existing imports and functions
-
-// @desc    Get All Orders (Admin)
-// @route   GET /api/orders/admin/all-orders
-exports.getAllOrders = async (req, res) => {
-  try {
-    const orders = await Order.find()
-      .populate("user", "name email") // Show who placed the order
-      .sort({ createdAt: -1 }); // Newest first
-
+    const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
     res.status(200).json({ success: true, orders });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Update Order Status (Admin)
-// @route   PUT /api/orders/admin/order/:id
+exports.getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate("user", "name email")
+      .sort({ createdAt: -1 });
+    res.status(200).json({ success: true, orders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.updateOrderStatus = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -146,10 +136,9 @@ exports.updateOrderStatus = async (req, res) => {
       if (req.body.status === "Delivered") {
         order.deliveredAt = Date.now();
       } else {
-        order.deliveredAt = undefined; // Reset if changed back
+        order.deliveredAt = undefined;
       }
     }
-
     await order.save();
     res.status(200).json({ success: true, message: "Status updated", order });
   } catch (error) {
@@ -159,27 +148,19 @@ exports.updateOrderStatus = async (req, res) => {
 
 exports.cancelOrder = async (req, res) => {
   try {
-    const { reason } = req.body; // <--- Get reason from request body
-
+    const { reason } = req.body;
     const order = await Order.findOne({ _id: req.params.id, user: req.user.id });
 
-    if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found" });
-    }
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
     if (order.orderStatus !== "Processing") {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Cannot cancel order. Current status: ${order.orderStatus}` 
-      });
+      return res.status(400).json({ success: false, message: `Cannot cancel order. Current status: ${order.orderStatus}` });
     }
 
-    if (!reason) {
-       return res.status(400).json({ success: false, message: "Cancellation reason is required" });
-    }
+    if (!reason) return res.status(400).json({ success: false, message: "Cancellation reason is required" });
 
     order.orderStatus = "Cancelled";
-    order.cancellationReason = reason; // <--- Save the reason
+    order.cancellationReason = reason;
     await order.save();
 
     res.status(200).json({ success: true, message: "Order cancelled successfully", order });

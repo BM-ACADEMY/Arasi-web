@@ -174,6 +174,7 @@ const Product = () => {
   // ==========================
   const openDrawer = (product = null) => {
     if (product) {
+      // Edit Mode - No limit check needed
       setIsEditing(true);
       setCurrentId(product._id);
 
@@ -196,6 +197,14 @@ const Product = () => {
       setNewImages([]); // Reset new uploads
 
     } else {
+      // Create Mode - CHECK LIMIT HERE
+      // ---------------------------------------------------------
+      if (products.length >= 25) {
+        toast.error("Limit reached: You can only create up to 25 products.");
+        return; // Stop function execution
+      }
+      // ---------------------------------------------------------
+
       setIsEditing(false);
       setCurrentId(null);
       setFormData(initialFormState);
@@ -340,7 +349,23 @@ const Product = () => {
               </tbody>
             </table>
           </div>
-          {/* Pagination Controls ... (Same as before) */}
+          {/* Pagination Controls */}
+          {!loading && products.length > 0 && (
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
+              <span className="text-slate-500">
+                Showing <span className="font-medium text-slate-900">{indexOfFirstItem + 1}</span> to <span className="font-medium text-slate-900">{Math.min(indexOfLastItem, products.length)}</span> of <span className="font-medium text-slate-900">{products.length}</span> results
+              </span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="p-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50 transition"><FiChevronLeft size={18} /></button>
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <button key={i + 1} onClick={() => paginate(i + 1)} className={`px-3 py-1 rounded-lg text-sm font-medium transition ${currentPage === i + 1 ? "bg-indigo-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}>{i + 1}</button>
+                  ))}
+                </div>
+                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="p-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50 transition"><FiChevronRight size={18} /></button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

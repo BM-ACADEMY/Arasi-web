@@ -22,6 +22,17 @@ const deleteImage = (relativePath) => {
 exports.createSubCategory = async (req, res) => {
   try {
     const { name, category } = req.body;
+
+    const subCategoryCount = await SubCategory.countDocuments({ category: category });
+    
+    if (subCategoryCount >= 5) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Limit reached: You can only create 5 subcategories for this category." 
+      });
+    }
+    // ---------------------------------------------------
+
     let imagePath = "";
 
     if (req.file) {
@@ -41,6 +52,7 @@ exports.createSubCategory = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
 
 exports.getAllSubCategories = async (req, res) => {
   try {

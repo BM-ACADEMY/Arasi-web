@@ -198,7 +198,7 @@ const CheckoutPage = () => {
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-12 bg-slate-50 px-4">
+    <div className="min-h-screen md:pt-52 pt-24 pb-12 bg-slate-50 px-4">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
 
         {/* LEFT: Shipping Address Section */}

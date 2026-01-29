@@ -19,6 +19,17 @@ const deleteImage = (relativePath) => {
 
 exports.createProduct = async (req, res) => {
   try {
+    // --- NEW LOGIC: Check Limit (Max 25) ---
+    const productCount = await Product.countDocuments();
+    
+    if (productCount >= 25) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Limit reached: You can only create up to 25 products." 
+      });
+    }
+    // ---------------------------------------
+
     const { name, variants, details } = req.body;
 
     let imagePaths = [];
