@@ -1,26 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiPlus,
-  FiEdit2,
+  FiEdit3,
   FiTrash2,
   FiX,
   FiImage,
-  FiUpload,
-  FiAlertTriangle,
+  FiUploadCloud,
+  FiAlertCircle,
   FiChevronLeft,
   FiChevronRight,
+  FiSearch,
 } from "react-icons/fi";
 import api from "@/services/api";
 import toast from "react-hot-toast";
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+
 const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(8);
 
   // Modals & form
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,17 +54,27 @@ const Categories = () => {
     fetchCategories();
   }, []);
 
-  // ─── Pagination Logic ─────────────────────────────────────
-  const totalPages = Math.ceil(categories.length / itemsPerPage);
+  // ─── Search & Pagination Logic ────────────────────────────
+  const filteredCategories = useMemo(() => {
+    return categories.filter((cat) =>
+      cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [categories, searchQuery]);
+
+  const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentItems = categories.slice(startIndex, startIndex + itemsPerPage);
+  const currentItems = filteredCategories.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset page when searching
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   // ─── Form Handlers ────────────────────────────────────────
   const openAddModal = () => {
-
     if (categories.length >= 10) {
       toast.error("Limit reached: You can only create up to 10 categories.");
-      return; 
+      return;
     }
     setIsEditing(false);
     setCurrentId(null);
@@ -92,7 +106,12 @@ const Categories = () => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+      toast.error("Only image files are allowed");
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("File is too large. Maximum size is 5MB.");
       return;
     }
 
@@ -100,14 +119,11 @@ const Categories = () => {
     setPreviewUrl(URL.createObjectURL(file));
   };
 
-  const removeImage = () => {
-    setImageFile(null);
-    setPreviewUrl("");
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!name.trim()) return toast.error("Category name is required");
+    if (!imageFile && !previewUrl) return toast.error("Category image is mandatory");
 
     const loadingToast = toast.loading(isEditing ? "Updating..." : "Creating...");
 
@@ -118,10 +134,10 @@ const Categories = () => {
 
       if (isEditing) {
         await api.put(`/categories/${currentId}`, formData);
-        toast.success("Category updated", { id: loadingToast });
+        toast.success("Category updated successfully", { id: loadingToast });
       } else {
         await api.post("/categories", formData);
-        toast.success("Category created", { id: loadingToast });
+        toast.success("Category created successfully", { id: loadingToast });
       }
 
       fetchCategories();
@@ -132,24 +148,15 @@ const Categories = () => {
     }
   };
 
-  // ─── Delete ───────────────────────────────────────────────
   const confirmDelete = async () => {
     if (!deleteId) return;
-
     const toastId = toast.loading("Deleting...");
-
     try {
       await api.delete(`/categories/${deleteId}`);
       toast.success("Category deleted", { id: toastId });
-
-      // Smart page adjustment
-      if (currentItems.length === 1 && currentPage > 1) {
-        setCurrentPage((p) => p - 1);
-      }
       fetchCategories();
     } catch (err) {
-      const msg = err.response?.data?.message || "Could not delete category";
-      toast.error(msg, { id: toastId });
+      toast.error("Could not delete category", { id: toastId });
     } finally {
       setIsDeleteModalOpen(false);
       setDeleteId(null);
@@ -157,108 +164,73 @@ const Categories = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/40 pb-12">
-      {/* Header */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Categories</h1>
-            <p className="mt-1 text-gray-600">Organize your products efficiently</p>
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-12">
+      {/* ─── Header Section (Fixed) ────────────────────────── */}
+      <header className="bg-white border-b border-slate-200  top-0 z-50 shadow-sm backdrop-blur-md bg-white/90">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight truncate">Categories</h1>
+            <p className="text-sm text-slate-500 hidden sm:block truncate">Manage your product catalog structure</p>
           </div>
 
           <button
             onClick={openAddModal}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl shadow-sm transition-all duration-200 active:scale-[0.98]"
+            className="shrink-0 group relative inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm sm:text-base font-semibold rounded-full shadow-md shadow-indigo-200 transition-all duration-200 active:scale-95"
           >
-            <FiPlus size={18} />
-            Add Category
+            <FiPlus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="whitespace-nowrap">New Category</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Main Card */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-2xl shadow border border-gray-100/80 overflow-hidden">
+      {/* ─── Main Content ────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
+
+          {/* Toolbar */}
+          <div className="px-6 py-5 border-b border-slate-100 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+               {filteredCategories.length} Total Records
+            </div>
+          </div>
+
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50/70 border-b border-gray-100">
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Image</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Slug</th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                <tr className="bg-slate-50/50 border-b border-slate-200 text-slate-500">
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider w-24 text-center">Preview</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider">Details</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
-
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-100">
                 {loading ? (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-16 text-center text-gray-500">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-indigo-600"></div>
-                      <p className="mt-3">Loading categories...</p>
-                    </td>
-                  </tr>
+                   <tr><td colSpan={3} className="py-20 text-center text-slate-500 font-medium italic">Loading categories...</td></tr>
                 ) : currentItems.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-16 text-center">
-                      <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                        <FiImage className="text-gray-400" size={28} />
-                      </div>
-                      <h3 className="text-lg font-medium text-gray-900">No categories yet</h3>
-                      <p className="mt-1 text-gray-500">Create your first category to get started.</p>
-                      <button
-                        onClick={openAddModal}
-                        className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg font-medium"
-                      >
-                        <FiPlus size={16} /> Add Category
-                      </button>
-                    </td>
-                  </tr>
+                  <tr><td colSpan={3} className="py-24 text-center">
+                    <FiImage className="mx-auto text-slate-300 mb-2" size={40} />
+                    <p className="text-slate-500">No categories match your criteria.</p>
+                  </td></tr>
                 ) : (
-                  currentItems.map((cat) => (
-                    <motion.tr
-                      key={cat._id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="group hover:bg-indigo-50/30 transition-colors"
-                    >
+                  currentItems.map((cat, index) => (
+                    <motion.tr key={cat._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="group hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="h-12 w-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shadow-sm">
+                        <div className="h-14 w-14 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm mx-auto">
                           {cat.image ? (
-                            <img
-                              src={cat.image}
-                              alt={cat.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center">
-                              <FiImage className="text-gray-300" size={20} />
-                            </div>
-                          )}
+                            <img src={cat.image} alt={cat.name} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          ) : <FiImage className="m-auto text-slate-300" />}
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-900">{cat.name}</td>
-                      <td className="px-6 py-4 text-gray-500 text-sm font-mono">{cat.slug}</td>
+                      <td className="px-6 py-4">
+                        <p className="font-bold text-slate-800">{cat.name}</p>
+                        <p className="text-xs font-mono text-slate-400 italic">/{cat.slug}</p>
+                      </td>
                       <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => openEditModal(cat)}
-                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
-                            title="Edit"
-                          >
-                            <FiEdit2 size={18} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setDeleteId(cat._id);
-                              setIsDeleteModalOpen(true);
-                            }}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                            title="Delete"
-                          >
-                            <FiTrash2 size={18} />
-                          </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button onClick={() => openEditModal(cat)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"><FiEdit3 size={18} /></button>
+                          <button onClick={() => { setDeleteId(cat._id); setIsDeleteModalOpen(true); }} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"><FiTrash2 size={18} /></button>
                         </div>
                       </td>
                     </motion.tr>
@@ -268,163 +240,55 @@ const Categories = () => {
             </table>
           </div>
 
-          {/* Pagination & Rows selector */}
-          {!loading && categories.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/60 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
-              <div className="flex items-center gap-3">
-                <span className="text-gray-600">Rows per page:</span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  {[5, 10, 15, 25, 50].map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <span className="text-gray-600 whitespace-nowrap">
-                  {startIndex + 1}–{Math.min(startIndex + itemsPerPage, categories.length)} of {categories.length}
-                </span>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 rounded-lg border disabled:opacity-40 hover:bg-white transition"
-                  >
-                    <FiChevronLeft size={18} />
-                  </button>
-
-                  <span className="px-3 py-1.5 font-medium text-gray-800">
-                    {currentPage}
-                  </span>
-
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="p-2 rounded-lg border disabled:opacity-40 hover:bg-white transition"
-                  >
-                    <FiChevronRight size={18} />
-                  </button>
-                </div>
+          {/* Pagination */}
+          {!loading && filteredCategories.length > 0 && (
+            <div className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <span className="text-sm text-slate-500">Page {currentPage} of {totalPages}</span>
+              <div className="flex items-center gap-2">
+                <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition shadow-sm"><FiChevronLeft size={18}/></button>
+                <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition shadow-sm"><FiChevronRight size={18}/></button>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* ─── Add/Edit Modal ─────────────────────────────────────── */}
+      {/* ─── Add/Edit Modal ────────────────────────────────── */}
       <AnimatePresence>
         {isModalOpen && (
           <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={resetForm}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-            />
-
-            <motion.div
-              initial={{ scale: 0.94, opacity: 0, y: 30 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.94, opacity: 0, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
-            >
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto overflow-hidden">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetForm} className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60]" />
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+              <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl pointer-events-auto overflow-hidden">
                 <div className="px-6 py-5 border-b flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {isEditing ? "Edit Category" : "New Category"}
-                  </h2>
-                  <button
-                    onClick={resetForm}
-                    className="p-2 hover:bg-gray-100 rounded-full transition"
-                  >
-                    <FiX size={22} className="text-gray-600" />
-                  </button>
+                  <h2 className="text-xl font-bold text-slate-800">{isEditing ? "Edit Category" : "New Category"}</h2>
+                  <button onClick={resetForm} className="p-2 hover:bg-slate-100 rounded-full transition"><FiX size={20} /></button>
                 </div>
-
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Category Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
-                      placeholder="e.g. Organic Skincare"
-                      required
-                    />
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Name *</label>
+                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-400 font-medium" placeholder="e.g. Skin Care" />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Category Image
-                    </label>
-
-                    <div className="flex items-start gap-4">
-                      <div className="shrink-0 relative group">
-                        <div className="h-24 w-24 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 overflow-hidden flex items-center justify-center">
-                          {previewUrl ? (
-                            <img src={previewUrl} alt="Preview" className="h-full w-full object-cover" />
-                          ) : (
-                            <FiUpload className="text-gray-400" size={28} />
-                          )}
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Image *</label>
+                    <label className={`relative flex flex-col items-center justify-center w-full h-44 rounded-xl border-2 border-dashed cursor-pointer transition-all ${previewUrl ? 'border-indigo-300 bg-indigo-50/20' : 'border-slate-300 bg-slate-50 hover:bg-slate-100'}`}>
+                      <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                      {previewUrl ? (
+                        <>
+                          <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover rounded-lg" />
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-lg text-white font-bold text-sm">Change Image</div>
+                        </>
+                      ) : (
+                        <div className="text-center">
+                          <FiUploadCloud className="mx-auto text-indigo-500 mb-2" size={24} />
+                          <p className="text-xs font-semibold text-slate-600">Click to upload (Max 5MB)</p>
                         </div>
-
-                        {previewUrl && (
-                          <button
-                            type="button"
-                            onClick={removeImage}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition"
-                          >
-                            <FiX size={14} />
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="flex-1">
-                        <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium transition">
-                          <FiUpload size={16} />
-                          {previewUrl ? "Change image" : "Upload image"}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="hidden"
-                          />
-                        </label>
-                        <p className="mt-2 text-xs text-gray-500">
-                          PNG, JPG, WebP • max 2MB recommended
-                        </p>
-                      </div>
-                    </div>
+                      )}
+                    </label>
                   </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={resetForm}
-                      className="flex-1 py-2.5 px-5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition active:scale-[0.98]"
-                    >
-                      {isEditing ? "Save Changes" : "Create Category"}
-                    </button>
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={resetForm} className="flex-1 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg transition-all">Cancel</button>
+                    <button type="submit" className="flex-1 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-lg shadow-indigo-200 transition-all">Save Category</button>
                   </div>
                 </form>
               </div>
@@ -433,47 +297,19 @@ const Categories = () => {
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation */}
+      {/* ─── Delete Modal ─────────────────────────────────── */}
       <AnimatePresence>
         {isDeleteModalOpen && (
           <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsDeleteModalOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-            />
-
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            >
-              <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
-                <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-red-100 flex items-center justify-center">
-                  <FiAlertTriangle className="text-red-600" size={28} />
-                </div>
-
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Category?</h3>
-                <p className="text-gray-600 mb-8">
-                  This action cannot be undone. Products in this category may become uncategorized.
-                </p>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setIsDeleteModalOpen(false)}
-                    className="flex-1 py-2.5 px-5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmDelete}
-                    className="flex-1 py-2.5 px-5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm transition"
-                  >
-                    Delete
-                  </button>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsDeleteModalOpen(false)} className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80]" />
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="fixed inset-0 z-[90] flex items-center justify-center p-4 pointer-events-none">
+              <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 pointer-events-auto text-center">
+                <FiAlertCircle className="mx-auto text-red-500 mb-4" size={40} />
+                <h3 className="text-lg font-bold text-slate-900 mb-2">Delete Permanently?</h3>
+                <p className="text-slate-500 text-sm mb-6">This category will be removed forever. This action is irreversible.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => setIsDeleteModalOpen(false)} className="py-2.5 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
+                  <button onClick={confirmDelete} className="py-2.5 font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-md shadow-red-100">Delete</button>
                 </div>
               </div>
             </motion.div>

@@ -4,10 +4,12 @@ import { AuthProvider } from "@/context/AuthContext";
 import toast, { Toaster } from 'react-hot-toast';
 import Mainroute from "./Routes/Mainroute";
 import { CartProvider } from "@/context/CartContext";
+import ScrollToTop from "./Components/ScrollToTop";
 
 function App() {
   return (
     <BrowserRouter>
+     <ScrollToTop />
       {/* AuthProvider must be inside BrowserRouter to use navigation features */}
       <AuthProvider>
         <CartProvider>

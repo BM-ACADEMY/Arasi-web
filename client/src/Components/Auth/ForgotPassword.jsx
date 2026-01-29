@@ -14,7 +14,7 @@ const ForgotPassword = () => {
   const [canResend, setCanResend] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  
+
   // 4-Digit OTP State
   const [otp, setOtp] = useState(["", "", "", ""]);
   const inputRefs = useRef([]);
@@ -53,7 +53,7 @@ const ForgotPassword = () => {
       toast.success("OTP Resent");
       setTimer(30);
       setCanResend(false);
-      setOtp(["", "", "", ""]); 
+      setOtp(["", "", "", ""]);
       // Focus first input on resend
       if (inputRefs.current[0]) inputRefs.current[0].focus();
     } catch (error) {
@@ -69,10 +69,10 @@ const ForgotPassword = () => {
 
     setLoading(true);
     try {
-      await api.post("/auth/reset-password", { 
-        email, 
-        otp: otpCode, 
-        newPassword 
+      await api.post("/auth/reset-password", {
+        email,
+        otp: otpCode,
+        newPassword
       });
       toast.success("Password reset successfully! Please login.");
       navigate("/login");
@@ -102,10 +102,10 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }} 
-        animate={{ opacity: 1, scale: 1 }} 
+    <div className="min-h-screen pt-45 flex items-center justify-center bg-slate-50 p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
       >
         <div className="p-8">
@@ -123,19 +123,19 @@ const ForgotPassword = () => {
                 <label className="text-sm font-medium text-slate-700">Email Address</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input 
-                    type="email" 
-                    required 
+                  <input
+                    type="email"
+                    required
                     disabled={loading}
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)} 
-                    placeholder="name@company.com" 
-                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-[#4183cf] outline-none disabled:bg-slate-50 disabled:text-slate-500 transition-colors" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@company.com"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-[#4183cf] outline-none disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
                   />
                 </div>
               </div>
-              <button 
-                disabled={loading} 
+              <button
+                disabled={loading}
                 className={`w-full bg-[#4183cf] text-white py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all
                   ${loading ? "opacity-70 cursor-not-allowed" : "hover:bg-[#326cad] hover:shadow-md"}`}
               >
@@ -155,16 +155,16 @@ const ForgotPassword = () => {
               {/* OTP Inputs */}
               <div className="flex justify-center gap-3">
                 {otp.map((digit, index) => (
-                  <input 
-                    key={index} 
-                    ref={(el) => (inputRefs.current[index] = el)} 
-                    type="text" 
-                    maxLength="1" 
+                  <input
+                    key={index}
+                    ref={(el) => (inputRefs.current[index] = el)}
+                    type="text"
+                    maxLength="1"
                     disabled={loading}
-                    value={digit} 
-                    onChange={(e) => handleOtpChange(index, e)} 
-                    onKeyDown={(e) => handleOtpKeyDown(index, e)} 
-                    className="w-12 h-12 text-center text-xl font-bold rounded-lg border border-slate-200 focus:border-[#4183cf] outline-none disabled:bg-slate-50 transition-colors" 
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    className="w-12 h-12 text-center text-xl font-bold rounded-lg border border-slate-200 focus:border-[#4183cf] outline-none disabled:bg-slate-50 transition-colors"
                   />
                 ))}
               </div>
@@ -174,17 +174,17 @@ const ForgotPassword = () => {
                 <label className="text-sm font-medium text-slate-700">New Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input 
-                    type={showPassword ? "text" : "password"} 
-                    placeholder="Create new password" 
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create new password"
                     disabled={loading}
-                    className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-200 focus:border-[#4183cf] outline-none disabled:bg-slate-50 disabled:text-slate-500 transition-colors" 
-                    value={newPassword} 
-                    onChange={(e) => setNewPassword(e.target.value)} 
+                    className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-200 focus:border-[#4183cf] outline-none disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
                   />
-                  <button 
-                    type="button" 
-                    onClick={() => setShowPassword(!showPassword)} 
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                     disabled={loading}
                   >
@@ -196,8 +196,8 @@ const ForgotPassword = () => {
               {/* Resend Timer */}
               <div className="text-center">
                  {canResend ? (
-                   <button 
-                     onClick={handleResend} 
+                   <button
+                     onClick={handleResend}
                      disabled={loading}
                      className="text-sm font-semibold text-[#4183cf] hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                    >
@@ -208,9 +208,9 @@ const ForgotPassword = () => {
                  )}
               </div>
 
-              <button 
-                onClick={handleVerifyAndReset} 
-                disabled={loading} 
+              <button
+                onClick={handleVerifyAndReset}
+                disabled={loading}
                 className={`w-full bg-[#4183cf] text-white py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all
                     ${loading ? "opacity-70 cursor-not-allowed" : "hover:bg-[#326cad] hover:shadow-md"}`}
               >

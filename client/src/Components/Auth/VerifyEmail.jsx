@@ -9,7 +9,7 @@ const VerifyEmail = () => {
   const { state } = useLocation();
   const { verifyEmail } = useAuth();
   const navigate = useNavigate();
-  
+
   // If user tries to access this page directly without registering first
   if (!state?.email) {
       navigate("/register");
@@ -35,7 +35,7 @@ const VerifyEmail = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 pt-24">
+    <div className="min-h-screen  flex items-center justify-center bg-slate-50 p-4 pt-34">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-8">
            <div className="w-16 h-16 bg-[#4183cf]/10 rounded-full flex items-center justify-center mx-auto mb-4 text-[#4183cf]">

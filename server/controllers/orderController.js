@@ -3,6 +3,7 @@ const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const Order = require("../models/orderModel");
 const Cart = require("../models/cartModel");
+const sendEmail = require("../utils/sendEmail"); //
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -38,11 +39,11 @@ exports.createRazorpayOrder = async (req, res) => {
 // @route   POST /api/orders/verify-payment
 exports.verifyPayment = async (req, res) => {
   try {
-    const { 
-      razorpay_order_id, 
-      razorpay_payment_id, 
-      razorpay_signature, 
-      shippingAddress 
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      shippingAddress
     } = req.body;
 
     // 1. Verify Signature
@@ -58,7 +59,7 @@ exports.verifyPayment = async (req, res) => {
 
     // 2. Fetch Cart
     const cart = await Cart.findOne({ user: req.user.id }).populate("items.product");
-    
+
     // 3. Construct Order Items
     const orderItems = cart.items.map((item) => ({
       product: item.product._id,
@@ -88,11 +89,72 @@ exports.verifyPayment = async (req, res) => {
     cart.totalAmount = 0;
     await cart.save();
 
+    // ---------------------------------------------------------
+    // EMAIL NOTIFICATION LOGIC (ADMIN & USER)
+    // ---------------------------------------------------------
+    try {
+      // A. Construct the Email Body with all details
+      const productDetails = orderItems
+        .map(
+          (item) =>
+            `- ${item.name} | Variant: ${item.variant || "Std"} | Qty: ${item.quantity} | Price: ₹${item.price}`
+        )
+        .join("\n");
+
+      const shippingDetails = `
+        Address: ${shippingAddress.address}
+        City: ${shippingAddress.city}, State: ${shippingAddress.state}
+        Pincode: ${shippingAddress.pincode}
+        Phone: ${shippingAddress.phone}
+      `;
+
+      const userDetails = `
+        Name: ${req.user.name}
+        Email: ${req.user.email}
+      `;
+
+      const emailBody = `
+        Order ID: ${order._id}
+        Total Amount: ₹${order.totalAmount}
+
+        --- Product Details ---
+        ${productDetails}
+
+        --- Shipping Address ---
+        ${shippingDetails}
+
+        --- Customer Info ---
+        ${userDetails}
+      `;
+
+      // B. Send Email to USER
+      await sendEmail({
+        email: req.user.email, // Customer's email from req.user
+        subject: `Order Confirmed: ${order._id}`,
+        message: `Hello ${req.user.name},\n\nThank you for your order! Here are the details:\n\n${emailBody}`,
+      });
+
+      // C. Send Email to ADMIN
+      // We use process.env.SMTP_USER as the admin email since it's the store account
+      await sendEmail({
+        email: process.env.SMTP_USER,
+        subject: `New Order Received: ${order._id}`,
+        message: `You have received a new order from ${req.user.name}.\n\n${emailBody}`,
+      });
+
+      console.log("Emails sent to User and Admin successfully.");
+
+    } catch (emailError) {
+      console.error("Email Sending Failed:", emailError.message);
+      // Logic continues even if email fails, so the order is not lost
+    }
+    // ---------------------------------------------------------
+
     // --- SOCKET.IO NOTIFICATION ---
-    const io = req.app.get("io"); // Retrieve io instance
+    const io = req.app.get("io");
     io.emit("newOrder", {
       _id: order._id,
-      customerName: req.user.name, 
+      customerName: req.user.name,
       amount: order.totalAmount,
       createdAt: new Date()
     });

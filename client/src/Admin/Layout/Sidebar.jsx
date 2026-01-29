@@ -4,6 +4,8 @@ import { Link, useLocation } from "react-router-dom";
 import { adminSidebarItems } from "../navigation";
 import { LogOut, Settings, HelpCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext"; // <--- 1. Import Hook (Adjust path as needed)
+import Logo from "@/assets/logo.png"
+
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
@@ -28,11 +30,8 @@ const Sidebar = ({ isOpen, onClose }) => {
         {/* 1. BRAND LOGO AREA */}
         <div className="flex h-16 items-center border-b border-gray-700/50 px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FF5722] font-bold text-white">
-              P
-            </div>
             <span className="text-lg font-bold tracking-wide text-gray-100">
-              Pluto<span className="text-[#FF5722]">UI</span>
+              Arasi Soaps
             </span>
           </div>
         </div>
@@ -40,7 +39,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         {/* 2. NAVIGATION LINKS */}
         <div className="flex-1 overflow-y-auto py-6">
            {/* ... (Your existing navigation code remains unchanged) ... */}
-           
+
           <div className="px-6 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
             Main Menu
           </div>
@@ -81,16 +80,16 @@ const Sidebar = ({ isOpen, onClose }) => {
             <div className="flex-1 overflow-hidden">
               {/* Dynamic Name */}
               <h4 className="truncate text-sm font-semibold text-white">
-                {user?.name || "Admin User"} 
+                {user?.name || "Admin User"}
               </h4>
               {/* Dynamic Email */}
               <p className="truncate text-xs text-gray-400">
                 {user?.email || "loading..."}
               </p>
             </div>
-            
+
             {/* Logout Button */}
-            <button 
+            <button
               onClick={logout} // <--- 3. Trigger Logout
               className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
               title="Logout"

@@ -35,17 +35,17 @@ const Footer = () => {
   return (
     <footer className="bg-[#f8f8f8] pt-16 pb-8 px-6 md:px-12 border-t border-gray-100">
       <div className="max-w-screen-2xl mx-auto">
-        
+
         {/* Main Footer Grid - Now 4 Columns */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-16">
-          
+
           {/* Column 1: Logo */}
           <div className="flex flex-col items-start">
             <Link to="/">
-              <img 
-                src={logo} 
-                alt="Arasi Logo" 
-                className="h-14 w-auto object-contain" 
+              <img
+                src={logo}
+                alt="Arasi Logo"
+                className="h-14 w-auto object-contain"
               />
             </Link>
             <p className="mt-4 text-gray-500 text-sm leading-relaxed">
@@ -102,7 +102,7 @@ const Footer = () => {
           <div className="text-gray-500 text-sm">
             <span>© Arasi {currentYear} | Powered by Bmtechx.in</span>
           </div>
-          
+
           <div className="flex items-center gap-5">
             <a href="#" className="text-gray-400 hover:text-gray-900 transition-colors"><Instagram size={20} /></a>
             <a href="#" className="text-gray-400 hover:text-gray-900 transition-colors"><Twitter size={20} /></a>
@@ -110,7 +110,7 @@ const Footer = () => {
             <a href="#" className="text-gray-400 hover:text-gray-900 transition-colors"><Youtube size={20} /></a>
           </div>
         </div>
-        
+
       </div>
     </footer>
   );

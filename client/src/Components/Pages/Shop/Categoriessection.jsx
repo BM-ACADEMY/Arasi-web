@@ -26,7 +26,7 @@ const CategoriesSection = () => {
   const scroll = (direction) => {
     if (scrollContainerRef.current) {
       const { current } = scrollContainerRef;
-      const scrollAmount = 300; 
+      const scrollAmount = 300;
       current.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
     }
   };
@@ -34,8 +34,8 @@ const CategoriesSection = () => {
   if (!categories.length) return null;
 
   return (
-    <section className="relative py-0 w-full flex justify-center bg-[#c4ddeb38]">
-      
+    <section className="relative py-0 w-full flex justify-center bg-[#eee6af6c]">
+
       <div className="pointer-events-none absolute bottom-0 left-0 w-full h-32 " />
       <div className="w-full max-w-screen-2xl py-9 px-6 md:px-12">
 
@@ -71,8 +71,8 @@ const CategoriesSection = () => {
                   {/* UPDATED: Increased ring width (ring-2), added offset (ring-offset-2), and changed color to amber-600 */}
                   <div className="w-24 h-24 md:w-32 md:h-32 rounded-full p-1 border border-gray-200 ring-2 ring-transparent group-hover:ring-[#eb2b3133] group-hover:ring-offset-2 transition-all duration-500">
                     <div className="w-full h-full rounded-full overflow-hidden relative">
-                      <img 
-                        src={category.image || "https://via.placeholder.com/150"} 
+                      <img
+                        src={category.image || "https://via.placeholder.com/150"}
                         alt={category.name}
                         className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-out"
                       />
@@ -80,11 +80,11 @@ const CategoriesSection = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <h3 className="text-center text-xs md:text-sm font-medium captilize font-serif tracking-widest text-gray-900 group-hover:text-amber-700 transition-colors duration-300">
                   {category.name}
                 </h3>
-                
+
                 {/* UPDATED: Changed text color to amber-600 and added font-medium */}
                 <span className="text-[11px] font-medium text-blue-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-1">
                   Explore <ArrowRight size={12} />

@@ -28,8 +28,8 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <motion.div 
+    <div className="min-h-screen pt-35 flex items-center justify-center bg-slate-50 p-4">
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
@@ -46,8 +46,8 @@ const Login = () => {
               <label className="text-sm font-medium text-slate-700">Email Address</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   required
                   disabled={isLoading} // Disable input during loading
                   placeholder="name@company.com" // Added placeholder
@@ -66,7 +66,7 @@ const Login = () => {
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input 
+                <input
                   type={showPassword ? "text" : "password"}
                   required
                   disabled={isLoading} // Disable input during loading
@@ -75,9 +75,9 @@ const Login = () => {
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
                 />
-                <button 
-                  type="button" 
-                  onClick={() => setShowPassword(!showPassword)} 
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   disabled={isLoading}
                 >
@@ -87,10 +87,10 @@ const Login = () => {
             </div>
 
             {/* Submit Button with Loading State */}
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isLoading}
-              className={`w-full bg-[#4183cf] text-white py-2.5 rounded-lg font-semibold 
+              className={`w-full bg-[#4183cf] text-white py-2.5 rounded-lg font-semibold
                 flex items-center justify-center gap-2 transition-all duration-200
                 ${isLoading ? "opacity-70 cursor-not-allowed" : "hover:bg-[#326cad] hover:shadow-md active:scale-[0.98]"}`}
             >

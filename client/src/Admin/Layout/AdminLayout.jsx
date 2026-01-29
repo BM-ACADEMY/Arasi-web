@@ -1,10 +1,10 @@
 // src/Components/Admin/Layout/AdminLayout.jsx
 import React, { useState, useEffect, useRef } from "react";
-import { Outlet, useNavigate } from "react-router-dom"; 
-import { Menu, Bell, Search, ChevronDown, Package } from "lucide-react";
+import { Outlet, useNavigate } from "react-router-dom";
+import { Menu, Bell, ChevronDown, Package } from "lucide-react";
 import Sidebar from "./Sidebar";
 import { useAuth } from "@/context/AuthContext";
-import { io } from "socket.io-client"; 
+import { io } from "socket.io-client";
 
 // Initialize socket outside the component to prevent multiple connections
 const socket = io(import.meta.env.VITE_SERVER_URL );
@@ -12,7 +12,7 @@ const socket = io(import.meta.env.VITE_SERVER_URL );
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user } = useAuth();
-  
+
   // -- Notification Logic --
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -59,10 +59,10 @@ const AdminLayout = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex flex-1 flex-col overflow-hidden lg:ml-64">
-        
+
         {/* TOP NAVBAR */}
         <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm relative z-20">
-          
+
           {/* Left: Mobile Toggle & Search */}
           <div className="flex items-center gap-4">
             <button
@@ -71,16 +71,6 @@ const AdminLayout = () => {
             >
               <Menu size={20} />
             </button>
-
-            {/* Global Search Bar */}
-            <div className="hidden items-center rounded-lg bg-gray-100 px-3 py-2 md:flex">
-              <Search size={18} className="text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search orders, customers..."
-                className="ml-2 bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400 w-64"
-              />
-            </div>
           </div>
 
           {/* Right: Actions */}
@@ -88,7 +78,7 @@ const AdminLayout = () => {
 
             {/* --- NOTIFICATIONS BELL --- */}
             <div className="relative" ref={notificationRef}>
-              <div 
+              <div
                 className="relative cursor-pointer text-gray-500 transition-colors hover:text-[#FF5722]"
                 onClick={() => setShowNotifications(!showNotifications)}
               >
@@ -105,14 +95,14 @@ const AdminLayout = () => {
                 <div className="absolute right-0 mt-3 w-80 transform rounded-xl border border-gray-100 bg-white shadow-2xl transition-all">
                   <div className="flex items-center justify-between border-b px-4 py-3 bg-gray-50 rounded-t-xl">
                     <h3 className="text-sm font-semibold text-gray-800">Notifications</h3>
-                    <button 
-                      onClick={() => { setNotifications([]); setUnreadCount(0); }} 
+                    <button
+                      onClick={() => { setNotifications([]); setUnreadCount(0); }}
                       className="text-xs text-[#FF5722] hover:underline"
                     >
                       Clear All
                     </button>
                   </div>
-                  
+
                   <div className="max-h-96 overflow-y-auto">
                     {notifications.length === 0 ? (
                       <div className="py-8 text-center text-gray-500">
@@ -120,7 +110,7 @@ const AdminLayout = () => {
                       </div>
                     ) : (
                       notifications.map((notif, index) => (
-                        <div 
+                        <div
                           key={index}
                           onClick={handleNotificationClick}
                           className="flex cursor-pointer items-start gap-3 border-b px-4 py-3 transition-colors hover:bg-gray-50 last:border-0"
