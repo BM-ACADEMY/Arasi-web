@@ -1,9 +1,9 @@
-// src/Components/Pages/Shop/SubCategoryPage.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '@/services/api';
 import { motion } from 'framer-motion';
-import { ArrowRight, Plus } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import Soap from "@/assets/soap.png"
 
 const SubCategoryPage = () => {
   const { categorySlug } = useParams();
@@ -31,111 +31,91 @@ const SubCategoryPage = () => {
     if (categorySlug) fetchData();
   }, [categorySlug]);
 
-  // --- UPDATED LOADING SKELETON (Aligned Top, Grid Layout) ---
   if (loading) return (
-    <div className="min-h-screen bg-white pt-36 px-6">
-      <div className="max-w-[1400px] mx-auto">
-        
-        {/* Header Skeleton */}
-        <div className="flex flex-col items-center mb-16 gap-4">
-          <div className="w-32 h-4 bg-gray-100 rounded animate-pulse"></div>
-          <div className="w-64 md:w-96 h-12 bg-gray-100 rounded animate-pulse"></div>
-        </div>
-
-        {/* Grid Skeleton (Matches the 5-column layout) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-12 justify-center">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
-            <div key={i} className="flex flex-col items-center gap-4">
-              <div className="w-36 h-36 md:w-48 md:h-48 bg-gray-100 rounded-full animate-pulse"></div>
-              <div className="w-24 h-4 bg-gray-100 rounded animate-pulse"></div>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="h-screen bg-[#0d1a15] flex flex-col justify-center items-center">
+        <div className="w-16 h-16 border-4 border-[#4183cf] border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-white/50 font-serif text-xl animate-pulse">Loading Collections...</p>
     </div>
   );
 
   return (
-    <section className="py-24 pt-36 bg-white min-h-screen w-full relative">
+    /* REMOVED min-h-screen - Now content defines the height */
+    <section className="relative pt-15 w-full overflow-hidden bg-[#0d1a15]">
       
-      <div className="w-full max-w-[1400px] mx-auto px-6">
+      {/* 1. Background Image Layer */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={Soap} 
+          className="w-full h-full object-cover brightness-[0.6] contrast-125 scale-110"
+          alt="background texture"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1a2e26]/60 via-[#0d1a15]/90 to-[#0d1a15]" />
+      </div>
 
-        {/* 1. Header */}
+      <div className="relative z-10 w-full max-w-[1400px] mx-auto px-6 py-20 md:py-32">
+        
+        {/* 2. Header Section */}
         <div className="flex flex-col items-center justify-center text-center mb-16">
           <motion.span 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[#4183cf] font-bold text-[10px] md:text-xs tracking-[0.3em] uppercase mb-3"
+            className="text-gray-400 font-bold text-[10px] md:text-xs tracking-[0.4em] uppercase mb-4"
           >
-            Curated Collections
+            Our Collections
           </motion.span>
           
           <motion.h1 
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="text-4xl md:text-6xl font-serif text-gray-900 tracking-tight"
-          >
-            {categoryName}
+            className="text-4xl md:text-5xl font-medium capitalize text-white tracking-tight max-w-4xl leading-[1.1] font-serif"
+          > 
+            {categoryName} Collections
           </motion.h1>
-          
-          <div className="w-12 h-1 bg-[#4183cf] mt-6 rounded-full opacity-80" />
+          <div className="w-20 h-1 bg-orange-400/50 mt-4 rounded-full" />
         </div>
 
         {subCategories.length === 0 ? (
-          <div className="text-center py-20 bg-gray-50 rounded-3xl mx-auto max-w-2xl">
-            <p className="text-lg text-gray-400 font-serif italic">No collections found.</p>
-            <Link to="/shop" className="text-[#4183cf] mt-4 inline-block font-semibold hover:underline">
-              Back to Shop
+          <div className="text-center py-20 bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 max-w-2xl mx-auto">
+            <p className="text-xl text-white/40 italic">No collections found.</p>
+            <Link to="/shop" className="mt-6 inline-block text-orange-400 hover:text-white transition-colors">
+              Return to Shop
             </Link>
           </div>
         ) : (
-          /* 2. Grid Layout */
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-14 justify-center">
+          /* 3. Circular Grid Layout */
+          <div className="flex flex-wrap justify-center gap-10 md:gap-16">
             {subCategories.map((sub, index) => (
-              <Link to={`/${categorySlug}/${sub.slug}`} key={sub._id} className="block group cursor-pointer relative z-0">
+              <Link 
+                to={`/${categorySlug}/${sub.slug}`} 
+                key={sub._id} 
+                className="group flex flex-col items-center w-40 md:w-56"
+              >
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
-                  className="flex flex-col items-center"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  className="relative w-full"
                 >
-                  {/* --- NEW HOVER DESIGN: "The Lens Effect" --- */}
-                  <div className="relative w-36 h-36 md:w-48 md:h-48 mx-auto">
-                    
-                    {/* A. Focus Ring (Expands & Fades Out on Hover) */}
-                    <div className="absolute inset-0 rounded-full border-2 border-gray-100 transition-all duration-300 group-hover:border-[#4183cf]/50 group-hover:scale-110 group-hover:opacity-0" />
-                    
-                    {/* B. Static Ring (Holds shape) */}
-                    <div className="absolute inset-0 rounded-full border border-gray-100 group-hover:border-[#4183cf] transition-colors duration-300" />
-
-                    {/* C. Image Container */}
-                    <div className="absolute inset-1.5 rounded-full overflow-hidden bg-white z-10 isolate">
-                      <img
-                        src={sub.image || "https://via.placeholder.com/400x400?text=Category"}
-                        alt={sub.name}
-                        className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110 group-hover:brightness-90"
-                      />
-                      
-                      {/* D. Center Interaction (Scale Up Button) */}
-                      <div className="absolute inset-0 flex items-center justify-center">
-                         <div className="bg-white text-[#4183cf] w-12 h-12 rounded-full flex items-center justify-center shadow-xl transform scale-0 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300 cubic-bezier(0.34, 1.56, 0.64, 1)">
-                           <ArrowRight size={20} />
-                         </div>
+                  <div className="relative aspect-square w-full rounded-full overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-2 border-white/10 group-hover:border-white/40 transition-all duration-700">
+                    <div className="absolute inset-0 bg-[#2a3c35] z-0" />
+                    <img
+                      src={sub.image || "https://via.placeholder.com/600x600?text=Collection"}
+                      alt={sub.name}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-in-out group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-[#1a2e26]/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 backdrop-blur-[2px]">
+                      <div className="bg-white text-[#1a2e26] p-4 rounded-full shadow-2xl transform translate-y-8 group-hover:translate-y-0 transition-transform duration-500">
+                        <ArrowRight size={24} />
                       </div>
                     </div>
                   </div>
 
-                  {/* --- TEXT CONTENT --- */}
-                  <div className="text-center mt-5 relative">
-                    <h3 className="text-base md:text-lg font-serif font-medium text-gray-900 group-hover:text-[#4183cf] transition-colors duration-200">
+                  <div className="text-center mt-6">
+                    <h3 className="text-lg md:text-xl font-serif capitalize font-medium text-white group-hover:text-orange-300 transition-colors duration-300">
                       {sub.name}
                     </h3>
-                    
-                    {/* Subtle underline animation */}
-                    <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-0 h-[1px] bg-[#4183cf] transition-all duration-300 group-hover:w-1/2 mt-1"></div>
                   </div>
-
                 </motion.div>
               </Link>
             ))}

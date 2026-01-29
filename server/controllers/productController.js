@@ -118,34 +118,60 @@ exports.getProductBySlug = async (req, res) => {
   }
 };
 
+// ... imports remain the same
+
 exports.updateProduct = async (req, res) => {
   try {
     let product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
+    // 1. Handle New Uploads
+    const newImagePaths = [];
     if (req.files && req.files.length > 0) {
-      const newImages = [];
       for (const file of req.files) {
+        // Use either new name or existing name for file storage
         const path = await saveImage(file.buffer, "products", req.body.name || product.name);
-        newImages.push(path);
-      }
-      if (req.body.clearImages === 'true') {
-        product.images.forEach(img => deleteImage(img));
-        req.body.images = newImages;
-      } else {
-        req.body.images = [...product.images, ...newImages];
+        newImagePaths.push(path);
       }
     }
 
+    // 2. Handle Existing Images (Deletion Logic)
+    let keptImages = [];
+    if (req.body.existingImages) {
+      // Frontend sends JSON array of Full URLs: ["http://.../img1.png", ...]
+      const rawExisting = typeof req.body.existingImages === 'string'
+        ? JSON.parse(req.body.existingImages)
+        : req.body.existingImages;
+
+      // Convert Full URLs back to Relative Paths (stored in DB)
+      // e.g., "http://localhost:5000/uploads/img.png" -> "uploads/img.png"
+      keptImages = rawExisting.map(url => {
+        const serverUrl = process.env.SERVER_URL; 
+        return url.replace(`${serverUrl}/`, ""); 
+      });
+    }
+
+    // Find images currently in DB that are NOT in the keptImages list
+    const imagesToDelete = product.images.filter(img => !keptImages.includes(img));
+
+    // Delete them from filesystem
+    imagesToDelete.forEach(img => deleteImage(img));
+
+    // 3. Combine Kept + New
+    req.body.images = [...keptImages, ...newImagePaths];
+
+    // 4. Parse other JSON fields
     if (req.body.variants && typeof req.body.variants === 'string') {
         req.body.variants = JSON.parse(req.body.variants);
     }
     if (req.body.details && typeof req.body.details === 'string') {
         req.body.details = JSON.parse(req.body.details);
     }
-
+    
+    // Slug update
     if (req.body.name) req.body.slug = slugify(req.body.name, { lower: true });
 
+    // 5. Update DB
     product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
 
     res.status(200).json({ success: true, data: formatProduct(product) });
@@ -153,6 +179,8 @@ exports.updateProduct = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+// ... other functions remain the same
 
 exports.deleteProduct = async (req, res) => {
   try {

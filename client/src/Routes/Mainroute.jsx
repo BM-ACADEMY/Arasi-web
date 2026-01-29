@@ -19,11 +19,13 @@ import AdminRoutes from "./AdminRoutes";
 import CartPage from "@/Components/Pages/Homepage/Cart/Cartpage";
 import CheckoutPage from "@/Components/Checkoutpage/Checkoutpage";
 import OrderPage from "@/Components/Order/Orderpage";
+import Footer from "@/Components/Layout/Footer";
 
 const MainLayout = () => (
   <>
     <Navbar />
     <Outlet />
+    <Footer/>
   </>
 );
 
