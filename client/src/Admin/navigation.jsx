@@ -34,9 +34,9 @@ export const adminSidebarItems = [
     path: "/admin/orders",
     icon: Box,
   },
-  {
-    name: "Banner",
-    path: "/admin/banner",
-    icon: ImageIcon,
-  },
+  // {
+  //   name: "Banner",
+  //   path: "/admin/banner",
+  //   icon: ImageIcon,
+  // },
 ];

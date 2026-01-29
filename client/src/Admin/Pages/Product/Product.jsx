@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  FiPlus, FiEdit3, FiTrash2, FiX, FiImage, FiAlertOctagon, 
-  FiChevronLeft, FiChevronRight, FiSearch, FiFilter, FiSave, FiLayers 
+import {
+  FiPlus, FiEdit3, FiTrash2, FiX, FiImage, FiAlertOctagon,
+  FiChevronLeft, FiChevronRight, FiSearch, FiFilter, FiSave, FiLayers
 } from "react-icons/fi";
 import api from "@/services/api";
 import toast from "react-hot-toast";
@@ -12,18 +12,18 @@ const Product = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
-  const [filteredSubs, setFilteredSubs] = useState([]); 
+  const [filteredSubs, setFilteredSubs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(6); // Increased slightly for grid view potential
+  const [itemsPerPage] = useState(6);
 
   // --- Modal States ---
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false); // Renamed for clarity
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  
+
   // --- Action State ---
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
@@ -36,12 +36,13 @@ const Product = () => {
     category: "",
     subCategory: "",
     brand: "",
-    variants: [{ label: "", quantity: "", unit: "piece", price: "", stock: "" }],
+    // UPDATED: Added originalPrice to initial state
+    variants: [{ label: "", quantity: "", unit: "piece", price: "", originalPrice: "", stock: "" }],
     details: [{ heading: "", content: "" }]
   };
   const [formData, setFormData] = useState(initialFormState);
-  const [imageFiles, setImageFiles] = useState([]); 
-  const [previewUrls, setPreviewUrls] = useState([]); 
+  const [imageFiles, setImageFiles] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
 
   // ==========================
   // 1. DATA FETCHING
@@ -112,12 +113,15 @@ const Product = () => {
     updatedVariants[index][field] = value;
     setFormData({ ...formData, variants: updatedVariants });
   };
+
   const addVariant = () => {
-    setFormData({ 
-      ...formData, 
-      variants: [...formData.variants, { label: "", quantity: "", unit: "piece", price: "", stock: "" }] 
+    // UPDATED: Include originalPrice in new variants
+    setFormData({
+      ...formData,
+      variants: [...formData.variants, { label: "", quantity: "", unit: "piece", price: "", originalPrice: "", stock: "" }]
     });
   };
+
   const removeVariant = (index) => {
     const updatedVariants = formData.variants.filter((_, i) => i !== index);
     setFormData({ ...formData, variants: updatedVariants });
@@ -129,9 +133,9 @@ const Product = () => {
     setFormData({ ...formData, details: updatedDetails });
   };
   const addDetail = () => {
-    setFormData({ 
-      ...formData, 
-      details: [...formData.details, { heading: "", content: "" }] 
+    setFormData({
+      ...formData,
+      details: [...formData.details, { heading: "", content: "" }]
     });
   };
   const removeDetail = (index) => {
@@ -155,14 +159,18 @@ const Product = () => {
     if (product) {
       setIsEditing(true);
       setCurrentId(product._id);
-      
+
       setFormData({
         name: product.name,
         description: product.description || "",
         category: product.category?._id || "",
         subCategory: product.subCategory?._id || "",
         brand: product.brand || "",
-        variants: product.variants?.length ? product.variants : [{ label: "", quantity: "", unit: "piece", price: "", stock: "" }],
+        // UPDATED: Map existing originalPrice or fallback to empty
+        variants: product.variants?.length ? product.variants.map(v => ({
+            ...v,
+            originalPrice: v.originalPrice || ""
+        })) : [{ label: "", quantity: "", unit: "piece", price: "", originalPrice: "", stock: "" }],
         details: product.details?.length ? product.details : [{ heading: "", content: "" }]
       });
 
@@ -171,7 +179,7 @@ const Product = () => {
       }
 
       setPreviewUrls(product.images || []);
-      setImageFiles([]); 
+      setImageFiles([]);
     } else {
       setIsEditing(false);
       setCurrentId(null);
@@ -235,19 +243,19 @@ const Product = () => {
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 font-sans text-slate-800">
       <div className="max-w-7xl mx-auto space-y-6">
-        
+
         {/* --- HEADER SECTION --- */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">Inventory</h1>
             <p className="text-slate-500 mt-1">Manage your catalog, prices, and stock levels.</p>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div className="relative group">
-              <input 
-                type="text" 
-                placeholder="Search inventory..." 
+              <input
+                type="text"
+                placeholder="Search inventory..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onSubmit={handleSearch}
@@ -255,7 +263,7 @@ const Product = () => {
               />
               <FiSearch className="absolute left-3 top-3 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
             </div>
-            
+
             <button
               onClick={() => openDrawer()}
               className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-indigo-200 transition-all active:scale-95"
@@ -275,7 +283,7 @@ const Product = () => {
                   <th className="px-6 py-5 pl-8">Product</th>
                   <th className="px-6 py-5">Category</th>
                   <th className="px-6 py-5">Brand</th>
-                  <th className="px-6 py-5">Variants</th>
+                  <th className="px-6 py-5">Variants & Prices</th>
                   <th className="px-6 py-5 text-right pr-8">Actions</th>
                 </tr>
               </thead>
@@ -314,16 +322,18 @@ const Product = () => {
                         {prod.brand || "—"}
                       </td>
                       <td className="px-6 py-4">
-                         <div className="text-sm font-semibold text-slate-700">
-                           {prod.variants?.length > 0 ? (
-                             <span>
-                               ₹{Math.min(...prod.variants.map(v => v.price))} 
-                               <span className="text-slate-400 font-normal mx-1">-</span> 
-                               ₹{Math.max(...prod.variants.map(v => v.price))}
-                             </span>
-                           ) : <span className="text-slate-400 italic">No Price</span>}
-                         </div>
-                         <div className="text-xs text-slate-400 mt-0.5">{prod.variants?.length || 0} options available</div>
+                          <div className="text-sm font-semibold text-slate-700">
+                            {prod.variants?.length > 0 ? (
+                              <span>
+                                {/* Show Lowest Selling Price */}
+                                ₹{Math.min(...prod.variants.map(v => v.price))}
+                                <span className="text-slate-400 font-normal mx-1">-</span>
+                                {/* Show Highest Selling Price */}
+                                ₹{Math.max(...prod.variants.map(v => v.price))}
+                              </span>
+                            ) : <span className="text-slate-400 italic">No Price</span>}
+                          </div>
+                          <div className="text-xs text-slate-400 mt-0.5">{prod.variants?.length || 0} options available</div>
                       </td>
                       <td className="px-6 py-4 pr-8 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -368,19 +378,19 @@ const Product = () => {
         {isDrawerOpen && (
           <>
             {/* Backdrop */}
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               onClick={closeDrawer}
               className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity"
             />
-            
+
             {/* Slide-over Panel */}
-            <motion.div 
-              initial={{ x: "100%" }} 
-              animate={{ x: 0 }} 
-              exit={{ x: "100%" }} 
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="fixed inset-y-0 right-0 w-full md:w-[600px] bg-white shadow-2xl z-50 flex flex-col"
             >
@@ -398,7 +408,7 @@ const Product = () => {
               {/* Drawer Body (Scrollable) */}
               <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-50/30">
                 <form id="productForm" onSubmit={handleSubmit} className="space-y-8">
-                  
+
                   {/* Section 1: Basic Info */}
                   <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 space-y-4">
                     <div className="flex items-center gap-2 mb-2 text-slate-800 font-semibold border-b border-slate-100 pb-2">
@@ -430,8 +440,8 @@ const Product = () => {
                         </div>
                       )}
                       <div className="col-span-2">
-                         <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Description</label>
-                         <textarea name="description" rows="3" value={formData.description} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none" placeholder="Product details..."></textarea>
+                          <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Description</label>
+                          <textarea name="description" rows="3" value={formData.description} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none" placeholder="Product details..."></textarea>
                       </div>
                     </div>
                   </div>
@@ -444,42 +454,72 @@ const Product = () => {
                       </div>
                       <button type="button" onClick={addVariant} className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full hover:bg-indigo-100 font-medium transition">+ Add Variant</button>
                     </div>
-                    
-                    <div className="space-y-3">
-                      {formData.variants.map((variant, index) => (
-                        <div key={index} className="bg-slate-50 p-3 rounded-lg border border-slate-200/60 relative group">
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div className="col-span-2 md:col-span-1">
-                               <label className="text-[10px] uppercase font-bold text-slate-400">Label</label>
-                               <input type="text" placeholder="e.g. XL" value={variant.label} onChange={(e) => handleVariantChange(index, 'label', e.target.value)} className="w-full p-1.5 border border-slate-200 rounded text-sm bg-white" />
-                            </div>
-                            <div>
-                               <label className="text-[10px] uppercase font-bold text-slate-400">Unit</label>
-                               <input list={`units-${index}`} placeholder="pc" value={variant.unit} onChange={(e) => handleVariantChange(index, 'unit', e.target.value)} className="w-full p-1.5 border border-slate-200 rounded text-sm bg-white" />
-                               <datalist id={`units-${index}`}><option value="piece"/><option value="kg"/><option value="ltr"/></datalist>
-                            </div>
-                            <div>
-                               <label className="text-[10px] uppercase font-bold text-slate-400">Price</label>
-                               <input type="number" placeholder="0.00" value={variant.price} onChange={(e) => handleVariantChange(index, 'price', e.target.value)} className="w-full p-1.5 border border-slate-200 rounded text-sm bg-white" />
-                            </div>
-                             <div>
-                               <label className="text-[10px] uppercase font-bold text-slate-400">Stock</label>
-                               <input type="number" placeholder="0" value={variant.stock} onChange={(e) => handleVariantChange(index, 'stock', e.target.value)} className="w-full p-1.5 border border-slate-200 rounded text-sm bg-white" />
-                            </div>
+
+                    <div className="space-y-4">
+                      {formData.variants.map((variant, index) => {
+                         // Calculate Discount for Display
+                         const selling = parseFloat(variant.price) || 0;
+                         const original = parseFloat(variant.originalPrice) || 0;
+                         const discount = original > selling ? Math.round(((original - selling) / original) * 100) : 0;
+
+                         return (
+                        <div key={index} className="bg-slate-50 p-4 rounded-lg border border-slate-200/60 relative group">
+
+                          <div className="grid grid-cols-12 gap-3 mb-2">
+                             {/* Line 1: Basic Variant Info */}
+                             <div className="col-span-4">
+                                <label className="text-[10px] uppercase font-bold text-slate-400">Label (Size/Vol)</label>
+                                <input type="text" placeholder="e.g. XL" value={variant.label} onChange={(e) => handleVariantChange(index, 'label', e.target.value)} className="w-full p-2 border border-slate-200 rounded text-sm bg-white" />
+                             </div>
+                             <div className="col-span-4">
+                                <label className="text-[10px] uppercase font-bold text-slate-400">Unit</label>
+                                <input list={`units-${index}`} placeholder="pc" value={variant.unit} onChange={(e) => handleVariantChange(index, 'unit', e.target.value)} className="w-full p-2 border border-slate-200 rounded text-sm bg-white" />
+                                <datalist id={`units-${index}`}><option value="piece"/><option value="kg"/><option value="ltr"/></datalist>
+                             </div>
+                             <div className="col-span-4">
+                                <label className="text-[10px] uppercase font-bold text-slate-400">Stock Qty</label>
+                                <input type="number" placeholder="0" value={variant.stock} onChange={(e) => handleVariantChange(index, 'stock', e.target.value)} className="w-full p-2 border border-slate-200 rounded text-sm bg-white" />
+                             </div>
                           </div>
+
+                          {/* Line 2: Pricing */}
+                          <div className="grid grid-cols-12 gap-3 bg-white p-3 rounded border border-slate-100">
+                             <div className="col-span-5">
+                                <label className="text-[10px] uppercase font-bold text-slate-400">MRP / Original Price</label>
+                                <div className="relative">
+                                    <span className="absolute left-2 top-2 text-slate-400 text-xs">₹</span>
+                                    <input type="number" placeholder="0.00" value={variant.originalPrice} onChange={(e) => handleVariantChange(index, 'originalPrice', e.target.value)} className="w-full pl-6 p-1.5 border border-slate-200 rounded text-sm focus:border-indigo-500 outline-none" />
+                                </div>
+                             </div>
+                             <div className="col-span-5">
+                                <label className="text-[10px] uppercase font-bold text-indigo-500">Selling Price</label>
+                                <div className="relative">
+                                    <span className="absolute left-2 top-2 text-slate-400 text-xs">₹</span>
+                                    <input type="number" placeholder="0.00" value={variant.price} onChange={(e) => handleVariantChange(index, 'price', e.target.value)} className="w-full pl-6 p-1.5 border border-indigo-200 rounded text-sm focus:border-indigo-500 outline-none font-medium" />
+                                </div>
+                             </div>
+                             <div className="col-span-2 flex items-end justify-center pb-2">
+                                {discount > 0 ? (
+                                    <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                                        {discount}% Off
+                                    </span>
+                                ) : <span className="text-xs text-slate-300">-</span>}
+                             </div>
+                          </div>
+
                           {formData.variants.length > 1 && (
                             <button type="button" onClick={() => removeVariant(index)} className="absolute -top-2 -right-2 bg-white text-red-500 shadow-sm border border-slate-200 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50">
                               <FiX size={14} />
                             </button>
                           )}
                         </div>
-                      ))}
+                      )})}
                     </div>
                   </div>
 
                   {/* Section 3: Images */}
                   <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-                     <div className="flex items-center gap-2 mb-4 text-slate-800 font-semibold border-b border-slate-100 pb-2">
+                      <div className="flex items-center gap-2 mb-4 text-slate-800 font-semibold border-b border-slate-100 pb-2">
                       <FiImage className="text-indigo-500" /> Media
                     </div>
                     <div className="flex flex-wrap gap-3">
@@ -499,17 +539,17 @@ const Product = () => {
                   {/* Section 4: Extra Details */}
                   <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
                     <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                       <span className="text-slate-800 font-semibold text-sm">Additional Specifications</span>
-                       <button type="button" onClick={addDetail} className="text-xs text-indigo-600 font-medium hover:underline">+ Add Field</button>
+                        <span className="text-slate-800 font-semibold text-sm">Additional Specifications</span>
+                        <button type="button" onClick={addDetail} className="text-xs text-indigo-600 font-medium hover:underline">+ Add Field</button>
                     </div>
                     <div className="space-y-2">
-                       {formData.details.map((det, idx) => (
-                         <div key={idx} className="flex gap-2">
-                           <input type="text" placeholder="Title (e.g. Color)" value={det.heading} onChange={(e) => handleDetailChange(idx, 'heading', e.target.value)} className="w-1/3 p-2 border border-slate-200 rounded text-xs bg-slate-50" />
-                           <input type="text" placeholder="Value (e.g. Red)" value={det.content} onChange={(e) => handleDetailChange(idx, 'content', e.target.value)} className="w-full p-2 border border-slate-200 rounded text-xs" />
-                           <button type="button" onClick={() => removeDetail(idx)} className="text-slate-400 hover:text-red-500"><FiTrash2 size={14}/></button>
-                         </div>
-                       ))}
+                        {formData.details.map((det, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <input type="text" placeholder="Title (e.g. Color)" value={det.heading} onChange={(e) => handleDetailChange(idx, 'heading', e.target.value)} className="w-1/3 p-2 border border-slate-200 rounded text-xs bg-slate-50" />
+                            <input type="text" placeholder="Value (e.g. Red)" value={det.content} onChange={(e) => handleDetailChange(idx, 'content', e.target.value)} className="w-full p-2 border border-slate-200 rounded text-xs" />
+                            <button type="button" onClick={() => removeDetail(idx)} className="text-slate-400 hover:text-red-500"><FiTrash2 size={14}/></button>
+                          </div>
+                        ))}
                     </div>
                   </div>
 
@@ -519,7 +559,7 @@ const Product = () => {
               {/* Drawer Footer (Sticky) */}
               <div className="p-5 border-t border-slate-100 bg-white flex gap-3">
                 <button onClick={closeDrawer} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-slate-600 font-medium hover:bg-slate-50 transition">Cancel</button>
-                <button 
+                <button
                   onClick={handleSubmit}
                   className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition flex items-center justify-center gap-2"
                 >
@@ -540,10 +580,10 @@ const Product = () => {
         {isDeleteModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsDeleteModalOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.9, opacity: 0 }} 
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
               className="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden"
             >
               <div className="p-6 text-center">
@@ -553,8 +593,8 @@ const Product = () => {
                 <h3 className="text-lg font-bold text-slate-900 mb-2">Delete this product?</h3>
                 <p className="text-sm text-slate-500 mb-6">This action cannot be undone. The product and all its variants will be permanently removed.</p>
                 <div className="grid grid-cols-2 gap-3">
-                   <button onClick={() => setIsDeleteModalOpen(false)} className="py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition">Cancel</button>
-                   <button onClick={confirmDelete} className="py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 shadow-lg shadow-red-200 transition">Delete</button>
+                    <button onClick={() => setIsDeleteModalOpen(false)} className="py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition">Cancel</button>
+                    <button onClick={confirmDelete} className="py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 shadow-lg shadow-red-200 transition">Delete</button>
                 </div>
               </div>
             </motion.div>

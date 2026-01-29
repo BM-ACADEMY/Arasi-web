@@ -33,6 +33,7 @@ const productSchema = new mongoose.Schema({
       quantity: Number,
       unit: { type: String, required: true, default: "piece" },
       price: Number,
+      originalPrice: Number,
       stock: Number
     }
   ],
