@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import api from "@/services/api"; // Your Axios instance
+import api from "@/services/api";
 
 const SearchBar = ({ isOpen, onToggle }) => {
   const inputRef = useRef(null);
@@ -20,13 +20,21 @@ const SearchBar = ({ isOpen, onToggle }) => {
     }
   }, [isOpen]);
 
-  // --- SEARCH LOGIC (Debounced) ---
+  // --- 1. HANDLE "ENTER" KEY (NEW) ---
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && query.trim()) {
+       navigate(`/shop?keyword=${encodeURIComponent(query)}`);
+       onToggle(false);
+       setQuery("");
+    }
+  };
+
+  // --- 2. LIVE SEARCH LOGIC ---
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (query.trim().length > 0) {
         setLoading(true);
         try {
-          // Calls the updated backend route
           const { data } = await api.get(`/products?keyword=${query}`);
           if (data.success) {
             setResults(data.data);
@@ -40,7 +48,7 @@ const SearchBar = ({ isOpen, onToggle }) => {
       } else {
         setResults([]);
       }
-    }, 400); // Wait 400ms after typing
+    }, 400);
 
     return () => clearTimeout(delayDebounceFn);
   }, [query]);
@@ -63,10 +71,10 @@ const SearchBar = ({ isOpen, onToggle }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onToggle]);
 
-  // Handle Result Click
+  // Handle Result Click (Direct Navigation)
   const handleResultClick = (slug) => {
-    navigate(`/product/${slug}`); // Navigate to Details Page
-    onToggle(false); // Close Search
+    navigate(`/product/${slug}`);
+    onToggle(false);
     setQuery("");
     setResults([]);
   };
@@ -87,6 +95,7 @@ const SearchBar = ({ isOpen, onToggle }) => {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown} // Listen for Enter key
               placeholder="Search products..."
               className="w-full bg-transparent border-none outline-none text-sm px-4 py-2 text-slate-700 placeholder-slate-400"
             />
@@ -125,7 +134,6 @@ const SearchBar = ({ isOpen, onToggle }) => {
                 onClick={() => handleResultClick(product.slug)}
                 className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-none transition-colors"
               >
-                {/* Image */}
                 <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
                   <img
                     src={product.images?.[0] || "/placeholder.jpg"}
@@ -133,8 +141,6 @@ const SearchBar = ({ isOpen, onToggle }) => {
                     className="w-full h-full object-cover"
                   />
                 </div>
-
-                {/* Text Info */}
                 <div className="flex flex-col min-w-0">
                   <span className="text-sm font-semibold text-gray-800 truncate">
                     {product.name}
@@ -153,8 +159,8 @@ const SearchBar = ({ isOpen, onToggle }) => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* No Results State */}
+      
+      {/* No Results Message */}
       {isOpen && query.length > 0 && !loading && results.length === 0 && (
          <div className="absolute top-full right-0 mt-3 w-64 bg-white p-4 rounded-xl shadow-xl border border-gray-100 text-center text-sm text-gray-500">
            No matching products found.

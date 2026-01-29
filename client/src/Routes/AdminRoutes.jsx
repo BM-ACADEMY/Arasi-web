@@ -22,7 +22,7 @@ const AdminRoutes = () => {
         <Route index element={<Navigate to="dashboard" replace />} />
 
         {/* Dashboard */}
-        <Route path="dashboard" element={<DashboardHome />} />
+        <Route path="dashboard" element={<>Dashboard</>} />
 
         {/* Category Management */}
         <Route path="categories" element={<CategoryPage />} />

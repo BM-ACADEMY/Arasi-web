@@ -1,4 +1,6 @@
 const Product = require("../models/productModel");
+const Category = require("../models/categoryModel"); // Imported
+const SubCategory = require("../models/subCategoryModel"); // Imported
 const slugify = require("slugify");
 const { saveImage } = require("../utils/uploadConfig");
 const fs = require("fs");
@@ -17,7 +19,7 @@ const deleteImage = (relativePath) => {
 
 exports.createProduct = async (req, res) => {
   try {
-    const { name, variants, details } = req.body; // Get details
+    const { name, variants, details } = req.body;
 
     let imagePaths = [];
     if (req.files && req.files.length > 0) {
@@ -27,7 +29,6 @@ exports.createProduct = async (req, res) => {
       }
     }
 
-    // Parse JSON fields (variants & details)
     let parsedVariants = variants;
     if (typeof variants === 'string') parsedVariants = JSON.parse(variants);
 
@@ -39,7 +40,7 @@ exports.createProduct = async (req, res) => {
       slug: slugify(name, { lower: true }),
       images: imagePaths,
       variants: parsedVariants,
-      details: parsedDetails // Save details
+      details: parsedDetails
     });
 
     res.status(201).json({ success: true, data: formatProduct(product) });
@@ -48,21 +49,29 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// controllers/productController.js
-
 exports.getAllProducts = async (req, res) => {
   try {
     const { keyword, category, subCategory } = req.query;
     let query = { isActive: true };
 
-    // --- UPDATED SEARCH LOGIC ---
+    // --- SMART SEARCH LOGIC ---
     if (keyword) {
-      // Use Regex for partial match (letter-by-letter)
-      // "i" flag makes it case-insensitive
+      const searchRegex = new RegExp(keyword, "i");
+
+      // 1. Find Categories matching the keyword
+      const matchingCategories = await Category.find({ name: searchRegex }).select('_id');
+      const categoryIds = matchingCategories.map(cat => cat._id);
+
+      // 2. Find SubCategories matching the keyword
+      const matchingSubCategories = await SubCategory.find({ name: searchRegex }).select('_id');
+      const subCategoryIds = matchingSubCategories.map(sub => sub._id);
+
+      // 3. Build Query: Name OR Brand OR Category Match OR SubCategory Match
       query.$or = [
-        { name: { $regex: keyword, $options: "i" } },
-        { brand: { $regex: keyword, $options: "i" } },
-        // Optional: Search in subCategory if needed, but requires lookup in simple queries
+        { name: searchRegex },
+        { brand: searchRegex },
+        { category: { $in: categoryIds } },
+        { subCategory: { $in: subCategoryIds } }
       ];
     }
     // ---------------------------
@@ -75,12 +84,6 @@ exports.getAllProducts = async (req, res) => {
       .populate("subCategory", "name")
       .sort({ createdAt: -1 });
 
-    // Format the image URLs before sending
-    const formatProduct = (product) => ({
-      ...product._doc,
-      images: product.images.map(img => `${process.env.SERVER_URL}/${img}`)
-    });
-
     res.status(200).json({
       success: true,
       count: products.length,
@@ -90,9 +93,12 @@ exports.getAllProducts = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate("category", "name").populate("subCategory", "name");
+    const product = await Product.findById(req.params.id)
+        .populate("category", "name")
+        .populate("subCategory", "name");
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.status(200).json({ success: true, data: formatProduct(product) });
   } catch (error) {
@@ -102,7 +108,9 @@ exports.getProductById = async (req, res) => {
 
 exports.getProductBySlug = async (req, res) => {
   try {
-    const product = await Product.findOne({ slug: req.params.slug }).populate("category", "name").populate("subCategory", "name");
+    const product = await Product.findOne({ slug: req.params.slug })
+        .populate("category", "name")
+        .populate("subCategory", "name");
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.status(200).json({ success: true, data: formatProduct(product) });
   } catch (error) {
@@ -132,8 +140,6 @@ exports.updateProduct = async (req, res) => {
     if (req.body.variants && typeof req.body.variants === 'string') {
         req.body.variants = JSON.parse(req.body.variants);
     }
-
-    // Parse Details Update
     if (req.body.details && typeof req.body.details === 'string') {
         req.body.details = JSON.parse(req.body.details);
     }
@@ -163,3 +169,4 @@ exports.deleteProduct = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+

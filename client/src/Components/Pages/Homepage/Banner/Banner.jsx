@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '@/services/api';
-import { ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Banner = () => {
@@ -12,12 +11,11 @@ const Banner = () => {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        // Assuming API might return an array now, or we wrap a single result
         const { data } = await api.get('/banner');
-        if (data.success) {
-          // Ensure we always work with an array for the slider
-          const bannerData = Array.isArray(data.banner) ? data.banner : [data.banner];
-          setBanners(bannerData);
+        
+        // UPDATED: Check for 'banners' (plural) as per the new controller
+        if (data.success && data.banners) {
+          setBanners(data.banners);
         }
       } catch (error) {
         console.error("Failed to load banner");
@@ -29,17 +27,22 @@ const Banner = () => {
   // 2. Auto-Slide Logic
   useEffect(() => {
     if (banners.length <= 1) return;
+    
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % banners.length);
-    }, 5000); // Change slide every 5 seconds
+    }, 5000); 
+
     return () => clearInterval(timer);
   }, [banners.length]);
 
-  if (banners.length === 0) return null; // Or a skeleton loader
+  // Handle Loading / Empty State
+  if (banners.length === 0) return null; 
 
   const currentBanner = banners[currentSlide];
+  
+  // Construct Image URL
   const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || "http://localhost:5000";
-  const imageUrl = currentBanner.image ? `${baseUrl}/${currentBanner.image}` : null;
+  const imageUrl = currentBanner?.image ? `${baseUrl}/${currentBanner.image}` : null;
 
   return (
     <div className="relative w-full h-[600px] bg-[#F9F9F9] overflow-hidden flex items-center">
@@ -48,7 +51,7 @@ const Banner = () => {
       <div className="w-full h-full relative">
         <AnimatePresence mode='wait'>
           <motion.div
-            key={currentSlide}
+            key={currentBanner._id || currentSlide} // Use ID for better key stability
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
@@ -59,7 +62,7 @@ const Banner = () => {
             <div className="w-full md:w-1/2 flex flex-col justify-center px-8 md:px-16 lg:px-24 z-10 bg-[#F9F9F9]/90 md:bg-transparent absolute md:relative h-full">
               <div className="space-y-6 max-w-lg">
 
-                {/* Tagline (Small Upper Case) */}
+                {/* Tagline */}
                 <p className="text-sm font-bold tracking-widest text-gray-500 uppercase">
                   {currentBanner.tagline || "ESSENTIAL ITEMS"}
                 </p>
@@ -74,7 +77,7 @@ const Banner = () => {
                   {currentBanner.description}
                 </p>
 
-                {/* Button - Black minimal style */}
+                {/* Button */}
                 <div className="pt-4">
                   <Link
                     to="/shop"
@@ -88,14 +91,18 @@ const Banner = () => {
 
             {/* Right Content (Image) */}
             <div className="w-full md:w-1/2 h-full relative">
-              {imageUrl && (
+              {imageUrl ? (
                 <img
                   src={imageUrl}
                   alt={currentBanner.heading}
                   className="w-full h-full object-cover object-center md:object-right"
                 />
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
+                    No Image
+                </div>
               )}
-              {/* Subtle shadow overlay to blend image with text area if needed */}
+              {/* Gradient Overlay for Mobile/Tablet blending */}
               <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#F9F9F9] to-transparent hidden md:block" />
             </div>
           </motion.div>
@@ -109,8 +116,9 @@ const Banner = () => {
             key={index}
             onClick={() => setCurrentSlide(index)}
             className={`h-3 w-3 rounded-full transition-all duration-300 ${
-              index === currentSlide ? 'bg-black w-3' : 'bg-gray-300 hover:bg-gray-400'
+              index === currentSlide ? 'bg-black w-8' : 'bg-gray-300 hover:bg-gray-400'
             }`}
+            aria-label={`Go to slide ${index + 1}`}
           />
         ))}
       </div>

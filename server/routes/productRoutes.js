@@ -12,18 +12,18 @@ const {
 
 const router = express.Router();
 
-
-
+// 1. Base Route /api/products
 router.route("/")
-  .get(getAllProducts) // Search via query params ?keyword=abc
+  .get(getAllProducts) // This handles ?keyword=... AND ?subCategory=...
   .post(protect, authorize("admin"), upload.array("images", 5), createProduct);
 
+// 2. ID Route /api/products/:id
 router.route("/:id")
-  .get(getProductById) // ID Search
+  .get(getProductById)
   .put(protect, authorize("admin"), upload.array("images", 5), updateProduct)
   .delete(protect, authorize("admin"), deleteProduct);
 
-router.route("/slug/:slug")
-  .get(getProductBySlug); // Slug Search
+// 3. Slug Route /api/products/slug/:slug
+router.get("/slug/:slug", getProductBySlug);
 
 module.exports = router;

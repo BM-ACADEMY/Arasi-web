@@ -1,4 +1,4 @@
-// src/Mainroute.js
+// src/Routes/Mainroute.jsx
 import React from "react";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 
@@ -14,14 +14,11 @@ import Homeroute from "./Homeroute";
 // Pages
 import SubCategoryPage from "@/Components/Pages/Shop/SubCategoryPage";
 import ProductListingPage from "@/Components/Pages/Shop/ProductListingPage";
-import ProductDetailsPage from "@/Components/Pages/Shop/ProductDetailsPage"; // New Import
+import ProductDetailsPage from "@/Components/Pages/Shop/ProductDetailsPage";
 import AdminRoutes from "./AdminRoutes";
 import CartPage from "@/Components/Pages/Homepage/Cart/Cartpage";
 import CheckoutPage from "@/Components/Checkoutpage/Checkoutpage";
 import OrderPage from "@/Components/Order/Orderpage";
-
-// Dummy Pages
-const Products = () => <div className="pt-24 text-center">Products Page</div>;
 
 const MainLayout = () => (
   <>
@@ -44,28 +41,28 @@ function Mainroute() {
 
         {/* Public Pages */}
         <Route path="/" element={<Homeroute />} />
-        <Route path="/products" element={<Products />} />
-
+        
+        {/* --- FIX: Explicit Shop Route (Must come BEFORE /:categorySlug) --- */}
+        <Route path="/shop" element={<ProductListingPage />} />
+        
         {/* Protected Routes */}
         <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>
            <Route path="/cart" element={<CartPage/>} />
+           <Route path="/checkout" element={<CheckoutPage />} />
+           <Route path="/orders" element={<OrderPage />} />
         </Route>
 
         {/* --- SHOP ROUTES --- */}
 
-        {/* 1. Single Product Detail (New Route) */}
+        {/* 1. Single Product Detail */}
         <Route path="/product/:slug" element={<ProductDetailsPage />} />
 
         {/* 2. Category Click -> Shows SubCategories */}
+        {/* Since "shop" is now handled above, this will capture "soaps", "oils", etc. */}
         <Route path="/:categorySlug" element={<SubCategoryPage />} />
 
         {/* 3. SubCategory Click -> Shows Products */}
         <Route path="/:categorySlug/:subCategorySlug" element={<ProductListingPage />} />
-
-
-        <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/orders" element={<OrderPage />} />
-
 
       </Route>
 

@@ -1,12 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const { getBanner, updateBanner } = require("../controllers/bannerController");
+const { getBanners, createBanner, updateBanner, deleteBanner } = require("../controllers/bannerController");
 const { protect, authorize } = require("../middleware/authMiddleware");
 const { upload } = require("../utils/uploadConfig");
 
-router.get("/", getBanner);
+// Public: Get all banners
+router.get("/", getBanners);
 
-// 'image' is the key we use in FormData on the frontend
-router.post("/", protect, authorize("admin"), upload.single("image"), updateBanner);
+// Admin: Create
+router.post("/", protect, authorize("admin"), upload.single("image"), createBanner);
+
+// Admin: Update (requires ID)
+router.put("/:id", protect, authorize("admin"), upload.single("image"), updateBanner);
+
+// Admin: Delete (requires ID)
+router.delete("/:id", protect, authorize("admin"), deleteBanner);
 
 module.exports = router;
