@@ -34,14 +34,14 @@ const ProductSection = () => {
   if (loading) return null; // Or a loading skeleton
 
   return (
-    <section className="py-20 bg-gray-50 flex justify-center w-full">
-      <div className="w-full max-w-[1400px] px-6">
+    <section className="py-20 bg-[#fdf9f0] flex justify-center w-full">
+      <div className="w-full max-w-screen-2xl px-6 md:px-12">
 
         {/* Header */}
         <div className="flex justify-between items-end mb-12">
           <div>
-            <h2 className="text-4xl font-bold text-gray-900 tracking-tight font-serif">
-              Best Sellers
+            <h2 className="text-4xl font-medium text-gray-900 font-serif">
+              Our Featured Products
             </h2>
             <p className="text-gray-500 mt-2 font-serif">
               Daily essentials for your routine.
@@ -49,7 +49,7 @@ const ProductSection = () => {
           </div>
 
           {/* Link to full shop */}
-          <Link to="/products" className="hidden md:block text-sm font-semibold text-[#4183cf] hover:underline">
+          <Link to="/shop" className="hidden font-serif md:block text-sm font-medium text-[#4183cf] hover:underline">
             View collection &rarr;
           </Link>
         </div>
