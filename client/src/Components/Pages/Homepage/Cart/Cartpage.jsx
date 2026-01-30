@@ -5,9 +5,7 @@ import {
   Minus,
   Plus,
   Trash2,
-  ArrowRight,
   ShoppingBag,
-  ArrowLeft,
   Truck,
   Loader2,
   Lock
@@ -38,7 +36,7 @@ const CartPage = () => {
 
   if (cart.items.length === 0) {
     return (
-      <div className="min-h-screen pt-24 pb-12 bg-[#F9F8F6] flex items-center justify-center px-4">
+      <div className="min-h-screen pt-24 pb-12 bg-[#F9F8F6] flex items-center justify-center px-6">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -65,23 +63,23 @@ const CartPage = () => {
   const total = subtotal + shipping;
 
   return (
-    <div className="min-h-screen md:pt-49 pt-28 pb-24 bg-[#F9F8F6]"> {/* Warm Premium Background */}
-      <div className="max-w-6xl mx-auto px-6">
+    <div className="min-h-screen pt-24 md:pt-32 lg:pt-40 pb-24 bg-[#F9F8F6]"> 
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header Section */}
-        <header className="mb-16 text-center lg:text-left">
+        <header className="mb-10 md:mb-16 text-center lg:text-left">
           <nav className="flex items-center justify-center lg:justify-start gap-2 text-[10px] uppercase tracking-[0.25em] text-[#948F89] mb-4">
             <Link to="/" className="hover:text-[#2C2C2C] transition-colors">Home</Link>
             <span>/</span>
             <span className="text-[#2C2C2C]">Your Selection</span>
           </nav>
-          <h1 className="text-4xl font-serif text-[#2C2C2C] tracking-tight">Shopping Bag</h1>
+          <h1 className="text-3xl md:text-4xl font-serif text-[#2C2C2C] tracking-tight">Shopping Bag</h1>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
 
           {/* LEFT: Items List */}
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-7 order-2 lg:order-1">
             <div className="border-t border-[#E8E4E1]">
               <AnimatePresence mode="popLayout">
                 {cart.items.map((item) => {
@@ -93,10 +91,10 @@ const CartPage = () => {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className="py-10 border-b border-[#E8E4E1] flex gap-8 group"
+                      className="py-8 md:py-10 border-b border-[#E8E4E1] flex flex-col sm:flex-row gap-6 md:gap-8 group"
                     >
-                      {/* Image Container with soft shadow */}
-                      <div className="relative w-32 h-40 bg-[#F1EFED] overflow-hidden flex-shrink-0 shadow-sm">
+                      {/* Image Container */}
+                      <div className="relative w-full sm:w-32 h-48 sm:h-40 bg-[#F1EFED] overflow-hidden flex-shrink-0 shadow-sm">
                         <img
                           src={getImageUrl(item.product.images?.[0])}
                           alt={item.product.name}
@@ -105,12 +103,12 @@ const CartPage = () => {
                       </div>
 
                       <div className="flex-1 flex flex-col">
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start gap-4">
                           <div className="space-y-1">
                             <p className="text-[10px] uppercase tracking-[0.2em] text-[#948F89]">
                               {typeof item.product.category === 'object' ? item.product.category.name : "Artisanal"}
                             </p>
-                            <h3 className="text-xl font-medium text-[#2C2C2C] leading-tight hover:text-[#948F89] transition-colors">
+                            <h3 className="text-lg md:text-xl font-medium text-[#2C2C2C] leading-tight hover:text-[#948F89] transition-colors">
                               <Link to={`/product/${item.product.slug}`}>{item.product.name}</Link>
                             </h3>
                             {item.variant && (
@@ -122,19 +120,19 @@ const CartPage = () => {
                           <p className="text-lg font-light text-[#2C2C2C]">₹{item.price.toLocaleString()}</p>
                         </div>
 
-                        <div className="mt-auto flex justify-between items-center">
-                          {/* Minimalist Quantity Switcher */}
-                          <div className="flex items-center border border-[#D1CDC7] rounded-full px-2">
+                        <div className="mt-6 sm:mt-auto flex justify-between items-center">
+                          {/* Quantity Switcher */}
+                          <div className="flex items-center border border-[#D1CDC7] rounded-full px-1">
                             <button
                               onClick={() => handleQuantityChange(item.product._id, item.variant, item.quantity, -1)}
-                              className="w-8 h-8 flex items-center justify-center text-[#2C2C2C] hover:text-[#948F89] transition-colors"
+                              className="w-8 h-8 flex items-center justify-center text-[#2C2C2C] hover:text-[#948F89]"
                             >
                               <Minus size={12} />
                             </button>
-                            <span className="px-3 text-xs font-medium w-8 text-center text-[#2C2C2C]">{item.quantity}</span>
+                            <span className="px-2 text-xs font-medium min-w-[24px] text-center">{item.quantity}</span>
                             <button
                               onClick={() => handleQuantityChange(item.product._id, item.variant, item.quantity, 1)}
-                              className="w-8 h-8 flex items-center justify-center text-[#2C2C2C] hover:text-[#948F89] transition-colors"
+                              className="w-8 h-8 flex items-center justify-center text-[#2C2C2C] hover:text-[#948F89]"
                             >
                               <Plus size={12} />
                             </button>
@@ -144,8 +142,8 @@ const CartPage = () => {
                             onClick={() => removeFromCart(item._id)}
                             className="text-[10px] uppercase tracking-[0.2em] text-[#948F89] hover:text-red-800 flex items-center gap-2 transition-colors"
                           >
-                            <Trash2 size={13} className="stroke-[1.5px]" />
-                            <span>Remove</span>
+                            <Trash2 size={13} />
+                            <span className="hidden xs:inline">Remove</span>
                           </button>
                         </div>
                       </div>
@@ -157,13 +155,13 @@ const CartPage = () => {
           </div>
 
           {/* RIGHT: Sidebar Summary */}
-          <aside className="lg:col-span-5">
-            <div className="bg-[#F1EFED] p-12 sticky top-32 rounded-sm shadow-sm">
-              <h2 className="text-xs uppercase tracking-[0.3em] font-bold text-[#2C2C2C] mb-10 text-center">
+          <aside className="lg:col-span-5 order-1 lg:order-2">
+            <div className="bg-[#F1EFED] p-8 md:p-12 lg:sticky lg:top-32 rounded-sm">
+              <h2 className="text-xs uppercase tracking-[0.3em] font-bold text-[#2C2C2C] mb-8 text-center">
                 Order Summary
               </h2>
 
-              <div className="space-y-6 mb-12">
+              <div className="space-y-4 mb-10">
                 <div className="flex justify-between text-sm text-[#87827D]">
                   <span className="font-light">Subtotal</span>
                   <span className="text-[#2C2C2C]">₹{subtotal.toLocaleString()}</span>
@@ -172,26 +170,26 @@ const CartPage = () => {
                   <span className="font-light">Shipping</span>
                   <span className="text-[#2C2C2C] font-serif">Free</span>
                 </div>
-                <div className="pt-8 border-t border-[#D1CDC7] flex justify-between items-baseline">
+                <div className="pt-6 border-t border-[#D1CDC7] flex justify-between items-baseline">
                   <span className="text-sm uppercase tracking-widest font-medium text-[#2C2C2C]">Total</span>
-                  <span className="text-3xl  text-[#2C2C2C]">₹{total.toLocaleString()}</span>
+                  <span className="text-2xl md:text-3xl text-[#2C2C2C]">₹{total.toLocaleString()}</span>
                 </div>
               </div>
 
               <Link
                 to="/checkout"
-                className="flex items-center justify-center w-full py-5 bg-[#2C2C2C] text-[#F9F8F6] text-[11px] uppercase tracking-[0.3em] transition-all hover:bg-[#404040] mb-8"
+                className="flex items-center justify-center w-full py-4 md:py-5 bg-[#2C2C2C] text-[#F9F8F6] text-[11px] uppercase tracking-[0.3em] transition-all hover:bg-[#404040] mb-8"
               >
                 Proceed to Checkout
               </Link>
 
               <div className="space-y-4 pt-6 border-t border-[#D1CDC7]/50">
                 <div className="flex items-center gap-4 text-[#948F89]">
-                  <Lock size={14} className="stroke-[1px]" />
+                  <Lock size={14} />
                   <span className="text-[10px] uppercase tracking-widest">Secure encrypted checkout</span>
                 </div>
                 <div className="flex items-center gap-4 text-[#948F89]">
-                  <Truck size={14} className="stroke-[1px]" />
+                  <Truck size={14} />
                   <span className="text-[10px] uppercase tracking-widest">Carbon-neutral delivery</span>
                 </div>
               </div>
