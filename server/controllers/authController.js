@@ -340,3 +340,34 @@ exports.updateUserProfile = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.updatePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    // 1. Get user (password is needed for comparison)
+    const user = await User.findById(req.user.id).select('+password');
+
+    if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // 2. Check Current Password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: "Current password is incorrect" });
+    }
+
+    // 3. Hash New Password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    await user.save();
+
+    // Optional: Send new token or just success message
+    sendTokenResponse(user, 200, res, "Password updated successfully");
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

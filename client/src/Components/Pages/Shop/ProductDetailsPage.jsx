@@ -4,20 +4,20 @@ import api from '@/services/api';
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import toast from 'react-hot-toast';
-import ProductCard from './ProductCard'; // <--- IMPORT THIS
+import ProductCard from './ProductCard'; 
 import {
   Star, ShoppingBag, ChevronRight, Minus, Plus,
-  Truck, ShieldCheck, Share2, ChevronDown, ChevronUp
+  Truck, ShieldCheck, Share2, ChevronDown, ChevronUp, User
 } from 'lucide-react';
 
 const ProductDetailsPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { user } = useAuth();
+  const { user } = useAuth(); // Using user from AuthContext
 
   const [product, setProduct] = useState(null);
-  const [relatedProducts, setRelatedProducts] = useState([]); // <--- NEW STATE
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,14 +47,14 @@ const ProductDetailsPage = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        setLoading(true); // Reset loading on slug change
+        setLoading(true);
         const { data } = await api.get(`/products/slug/${slug}`);
         
         if (data.success) {
           const currentProduct = data.data;
           setProduct(currentProduct);
           
-          // Reset interaction states when product changes
+          // Reset interaction states
           setSelectedImageIndex(0);
           setSelectedVariantIndex(0);
           setQuantity(1);
@@ -75,11 +75,9 @@ const ProductDetailsPage = () => {
     if (slug) fetchProduct();
   }, [slug]);
 
-  // --- NEW FUNCTION: Fetch Related Products ---
+  // Fetch Related Products
   const fetchRelatedProducts = async (currentProduct) => {
     try {
-      // 1. Determine filter criteria (Prefer SubCategory, fallback to Category)
-      // Note: currentProduct.subCategory is an object populated with { _id, name }
       let query = "";
       if (currentProduct.subCategory?._id) {
         query = `subCategory=${currentProduct.subCategory._id}`;
@@ -92,7 +90,6 @@ const ProductDetailsPage = () => {
       const { data } = await api.get(`/products?${query}`);
 
       if (data.success) {
-        // 2. Filter out the current product itself & limit to 4 items
         const filtered = data.data
           .filter(p => p._id !== currentProduct._id)
           .slice(0, 4);
@@ -103,7 +100,6 @@ const ProductDetailsPage = () => {
       console.error("Failed to fetch related products", error);
     }
   };
-  // ---------------------------------------------
 
   const fetchReviews = async (productId) => {
     try {
@@ -355,18 +351,25 @@ const ProductDetailsPage = () => {
               </div>
             )}
 
-            {/* Cart Buttons */}
+            {/* Cart Buttons - UPDATED LOGIC */}
             <div className="mb-8">
-              {!isAdded ? (
-                <button onClick={handleInitialAdd} className="w-full bg-[#507A58] text-white h-14 hover:bg-[#3e6145] transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:shadow-lg uppercase tracking-wider text-sm font-bold rounded-sm">
-                  <ShoppingBag size={18} /> Add to Basket
-                </button>
+              {user ? (
+                /* USER IS LOGGED IN: Show Add to Basket / Quantity Controls */
+                !isAdded ? (
+                  <button onClick={handleInitialAdd} className="w-full bg-[#507A58] text-white h-14 hover:bg-[#3e6145] transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:shadow-lg uppercase tracking-wider text-sm font-bold rounded-sm">
+                    <ShoppingBag size={18} /> Add to Basket
+                  </button>
+                ) : (
+                  <div className="flex items-center justify-between border border-[#507A58] h-14 px-4 bg-green-50 rounded-sm">
+                    <button onClick={handleDecrement} className="p-2 text-[#507A58] hover:bg-white hover:shadow-sm rounded transition-all"><Minus size={18} /></button>
+                    <span className="font-bold text-lg text-[#507A58] w-12 text-center">{quantity}</span>
+                    <button onClick={handleIncrement} className="p-2 text-[#507A58] hover:bg-white hover:shadow-sm rounded transition-all"><Plus size={18} /></button>
+                  </div>
+                )
               ) : (
-                <div className="flex items-center justify-between border border-[#507A58] h-14 px-4 bg-green-50 rounded-sm">
-                  <button onClick={handleDecrement} className="p-2 text-[#507A58] hover:bg-white hover:shadow-sm rounded transition-all"><Minus size={18} /></button>
-                  <span className="font-bold text-lg text-[#507A58] w-12 text-center">{quantity}</span>
-                  <button onClick={handleIncrement} className="p-2 text-[#507A58] hover:bg-white hover:shadow-sm rounded transition-all"><Plus size={18} /></button>
-                </div>
+                 <button onClick={() => navigate("/login")}  className="w-full bg-[#507A58] text-white h-14 hover:bg-[#3e6145] transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:shadow-lg uppercase tracking-wider text-sm font-bold rounded-sm">
+                    <ShoppingBag size={18} /> Add to Basket
+                  </button>
               )}
             </div>
 
