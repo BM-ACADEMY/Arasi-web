@@ -106,9 +106,9 @@ const ProductSection = () => {
             </div>
                </div>
                
-               <Link to="/shop" className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-700 transition-colors">
+               {/* <Link to="/shop" className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-700 transition-colors">
                   Shop All <ArrowRight className="w-4 h-4" />
-               </Link>
+               </Link> */}
             </div>
 
             {/* Horizontal Slider */}
