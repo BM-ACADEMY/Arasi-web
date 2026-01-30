@@ -23,7 +23,6 @@ import Footer from "@/Components/Layout/Footer";
 import UserProfile from "@/Components/Pages/Homepage/UserProfile/UserProfile";
 import About from "@/Components/Pages/Homepage/About/About";
 import ContactPage from "@/Components/Pages/Homepage/Contact/ContactPage";
-// import RaiseComplaint from "@/Admin/Pages/Complaint/RaiseComplaint";
 
 const MainLayout = () => (
   <>
@@ -59,7 +58,6 @@ function Mainroute() {
            <Route path="/checkout" element={<CheckoutPage />} />
            <Route path="/orders" element={<OrderPage />} />
            <Route path="/profile" element={<UserProfile />} />
-           {/* <Route path="/support" element={<RaiseComplaint />} /> */}
         </Route>
 
         {/* --- SHOP ROUTES --- */}

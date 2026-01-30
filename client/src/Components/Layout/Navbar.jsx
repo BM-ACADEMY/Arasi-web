@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -13,19 +13,28 @@ import {
   Phone,
   Mail,
   Search, 
-  FileText
+  FileText,
+  AlertCircle
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import SearchBar from "./SearchBar";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import ComplaintDrawer from "@/Components/Layout/Complaint/ComplaintDrawer"; 
+import api from "@/services/api"; // Import API
+import { io } from "socket.io-client"; // Import Socket
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false); 
-  const { cartCount } = useCart();
+  const [isComplaintOpen, setIsComplaintOpen] = useState(false); 
+  
+  // New State for Red Dot
+  const [hasUnreadSupport, setHasUnreadSupport] = useState(false);
+  const socketRef = useRef(null);
 
+  const { cartCount } = useCart();
   const location = useLocation();
   const { user, logout } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -35,6 +44,51 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // --- NEW: Check for Unread Support Messages ---
+  const checkUnreadSupport = async () => {
+    if (!user || isAdmin) return;
+    try {
+      const { data } = await api.get("/complaints/my");
+      if (data.success) {
+        // Check if ANY complaint has a last message from Admin that is NOT seen
+        const hasUnread = data.complaints.some(c => 
+          c.messages.length > 0 && 
+          c.messages[c.messages.length - 1].sender === "Admin" && 
+          !c.messages[c.messages.length - 1].seen
+        );
+        setHasUnreadSupport(hasUnread);
+      }
+    } catch (error) {
+      console.error("Failed to check unread support messages", error);
+    }
+  };
+
+  // --- NEW: Socket Listener for Real-time Red Dot ---
+  useEffect(() => {
+    if (user && !isAdmin) {
+        checkUnreadSupport(); // Initial check
+
+        socketRef.current = io(import.meta.env.VITE_SERVER_URL);
+        
+        socketRef.current.on("newMessage", ({ message }) => {
+            // If we receive a message from Admin, show red dot
+            if (message.sender === "Admin") {
+                setHasUnreadSupport(true);
+            }
+        });
+
+        return () => {
+            if (socketRef.current) socketRef.current.disconnect();
+        };
+    }
+  }, [user, isAdmin]);
+
+  const handleDrawerClose = () => {
+      setIsComplaintOpen(false);
+      // Re-check unread status when drawer closes (in case user read messages)
+      checkUnreadSupport();
+  };
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -66,8 +120,16 @@ const Navbar = () => {
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="relative group z-50">
-                        <Link to={user ? "/profile" : "/login"} className="flex items-center gap-1 hover:text-[#006baf] py-2 transition-colors">
-                             <User size={18} /> {user && <span className="max-w-[100px] truncate">{user.name}</span>}
+                        <Link to={user ? "/profile" : "/login"} className="flex items-center gap-1 hover:text-[#006baf] py-2 transition-colors relative">
+                             <User size={18} />
+                             
+                             {/* --- RED DOT ON PROFILE ICON --- */}
+                             {hasUnreadSupport && (
+                                <span className="absolute top-1 left-3 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white"></span>
+                             )}
+                             {/* ------------------------------- */}
+
+                             {user && <span className="max-w-[100px] truncate">{user.name}</span>}
                         </Link>
                         {user && (
                            <div className="absolute right-0 top-full pt-0 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right">
@@ -79,6 +141,18 @@ const Navbar = () => {
                                     <>
                                       <Link to="/profile" className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:bg-gray-50 hover:text-[#006baf] rounded-md"><Settings size={14} /> Profile</Link>
                                       <Link to="/orders" className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:bg-gray-50 hover:text-[#006baf] rounded-md"><Package size={14} /> Orders</Link>
+                                      
+                                      <button 
+                                        onClick={() => setIsComplaintOpen(true)}
+                                        className="w-full flex items-center justify-between px-3 py-2 text-slate-600 hover:bg-gray-50 hover:text-[#006baf] rounded-md text-left group"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                            <AlertCircle size={14} /> Support
+                                        </div>
+                                        {hasUnreadSupport && (
+                                            <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                                        )}
+                                      </button>
                                     </>
                                   )}
                                   <div className="h-px bg-gray-100 my-1"></div>
@@ -158,6 +232,10 @@ const Navbar = () => {
 
       <SearchBar isOpen={isSearchOpen} onToggle={setIsSearchOpen} />
 
+      {/* RENDER COMPLAINT DRAWER */}
+      {/* Pass handleDrawerClose to ensure dot clears if read */}
+      <ComplaintDrawer isOpen={isComplaintOpen} onClose={handleDrawerClose} />
+
       {/* --- MOBILE MENU OVERLAY --- */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -196,6 +274,14 @@ const Navbar = () => {
                           <>
                             <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-center gap-2 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg text-slate-700"><Settings size={16} /> Profile</Link>
                             <Link to="/orders" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-center gap-2 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg text-slate-700"><Package size={16} /> Orders</Link>
+                            {/* Mobile Support Button */}
+                            <button 
+                                onClick={() => { setIsMobileMenuOpen(false); setIsComplaintOpen(true); }}
+                                className="col-span-2 flex items-center justify-center gap-2 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg text-slate-700 relative"
+                            >
+                                <AlertCircle size={16} /> Support
+                                {hasUnreadSupport && <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500"></span>}
+                            </button>
                           </>
                         )}
                       </div>

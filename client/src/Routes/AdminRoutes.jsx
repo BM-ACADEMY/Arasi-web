@@ -13,6 +13,7 @@ import Product from "@/Admin/Pages/Product/Product";
 import AdminOrderPage from "@/Admin/Pages/Order/Order";
 import AdminBanner from "@/Admin/Pages/AdminBanner/AdminBanner";
 import Dashboard from "@/Admin/Pages/Dashboard/Dashboard";
+import AdminComplaints from "@/Admin/Pages/Complaint/AdminComplaints";
 
 const AdminRoutes = () => {
   return (
@@ -35,6 +36,7 @@ const AdminRoutes = () => {
         <Route path="products" element={<Product />} />
         <Route path="orders" element={<AdminOrderPage />} />
         <Route path="banner" element={<AdminBanner />} />
+        <Route path="complaints" element={<AdminComplaints />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="dashboard" replace />} />

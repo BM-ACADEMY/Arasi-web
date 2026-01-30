@@ -7,11 +7,7 @@ const complaintSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    type: {
-      type: String,
-      enum: ["Complaint", "Suggestion"], // Limit to these two types
-      required: true,
-    },
+    // Removed 'type' field as requested previously
     subject: {
       type: String,
       required: true,
@@ -23,10 +19,34 @@ const complaintSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Pending", "Reviewed", "Resolved"],
+      enum: ["Pending", "In Progress", "Resolved"],
       default: "Pending",
     },
-    images: [String], // Optional: URL array for uploaded screenshots
+    // Chat Messages
+    messages: [
+      {
+        sender: {
+          type: String,
+          enum: ["User", "Admin"],
+          required: true,
+        },
+        message: {
+          type: String,
+          required: true,
+        },
+        seen: {
+          type: Boolean,
+          default: false,
+        },
+        seenAt: {
+          type: Date,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

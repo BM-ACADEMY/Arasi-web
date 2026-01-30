@@ -1,11 +1,12 @@
-// src/Components/Admin/navigation.js
+// src/Admin/navigation.jsx
 import {
   LayoutDashboard,
   Layers,
   ListTree,
   ShoppingBag,
   Box,
-  ImageIcon
+  ImageIcon,
+  MessageSquare // Recommended for complaints
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -38,5 +39,10 @@ export const adminSidebarItems = [
     name: "Banner",
     path: "/admin/banner",
     icon: ImageIcon,
+  },
+  {
+    name: "Complaints",
+    path: "/admin/complaints", // Path updated for consistency
+    icon: MessageSquare,
   },
 ];

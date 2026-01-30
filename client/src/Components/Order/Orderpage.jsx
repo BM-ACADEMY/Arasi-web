@@ -96,7 +96,7 @@ const CancelOrderModal = ({ onClose, onConfirm, isCancelling }) => {
   return (
     <ModalWrapper onClose={onClose}>
       <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-50/50">
-        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
           <AlertCircle className="text-red-500" size={20} />
           Cancel Order
         </h3>
@@ -156,14 +156,14 @@ const CancelOrderModal = ({ onClose, onConfirm, isCancelling }) => {
       <div className="p-6 border-t bg-white mt-auto flex gap-3">
         <button
           onClick={onClose}
-          className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+          className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
         >
           Back
         </button>
         <button
           onClick={handleSubmit}
           disabled={isCancelling}
-          className="flex-1 py-3 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-70 shadow-lg shadow-red-100"
+          className="flex-1 py-3 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-70 shadow-lg shadow-red-100"
         >
           {isCancelling ? "Processing..." : "Confirm Cancel"}
         </button>
@@ -189,15 +189,15 @@ const TrackOrderModal = ({ order, onClose }) => {
   return (
     <ModalWrapper onClose={onClose}>
       <div className="sticky top-0 bg-white/90 backdrop-blur-md px-6 py-4 border-b flex items-center justify-between z-10">
-        <h3 className="font-bold text-gray-900 text-lg">Track Order</h3>
+        <h3 className="font-medium text-gray-900 text-lg">Track Order</h3>
         <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X size={20}/></button>
       </div>
       
       <div className="p-6 overflow-y-auto">
         <div className="flex justify-between items-start mb-8">
           <div>
-            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Order #{order._id.slice(-6).toUpperCase()}</p>
-            <div className={`mt-2 inline-flex px-3 py-1 rounded-full text-[10px] font-bold border ${getStatusColor(order.orderStatus)}`}>
+            <p className="text-[10px] text-gray-400 uppercase font-medium tracking-widest">Order #{order._id.slice(-6).toUpperCase()}</p>
+            <div className={`mt-2 inline-flex px-3 py-1 rounded-full text-[10px] font-medium border ${getStatusColor(order.orderStatus)}`}>
               {order.orderStatus}
             </div>
           </div>
@@ -206,7 +206,7 @@ const TrackOrderModal = ({ order, onClose }) => {
         {order.orderStatus === "Cancelled" ? (
            <div className="bg-red-50 rounded-xl p-6 text-center border border-red-100">
              <X className="mx-auto text-red-400 mb-2" size={32} />
-             <p className="font-bold text-red-900">Order Cancelled</p>
+             <p className="font-medium text-red-900">Order Cancelled</p>
              <p className="text-xs text-red-600 mt-1">Reason: {order.cancellationReason}</p>
            </div>
         ) : (
@@ -221,7 +221,7 @@ const TrackOrderModal = ({ order, onClose }) => {
                     <Icon size={18} />
                   </div>
                   <div className="pt-2">
-                    <p className={`text-sm font-bold transition-colors ${isCompleted ? "text-gray-900" : "text-gray-300"}`}>{step.label}</p>
+                    <p className={`text-sm font-medium transition-colors ${isCompleted ? "text-gray-900" : "text-gray-300"}`}>{step.label}</p>
                     {step.date && <p className="text-xs text-gray-500 mt-0.5">{formatDate(step.date)}</p>}
                   </div>
                 </div>
@@ -235,7 +235,7 @@ const TrackOrderModal = ({ order, onClose }) => {
              <MapPin size={16} className="text-gray-500" />
            </div>
            <div>
-             <p className="text-xs font-bold text-gray-900">Shipping Address</p>
+             <p className="text-xs font-medium text-gray-900">Shipping Address</p>
              <p className="text-xs text-gray-500 leading-relaxed mt-1">
                {order.shippingAddress?.address}, {order.shippingAddress?.city}, {order.shippingAddress?.pincode}
              </p>
@@ -294,15 +294,15 @@ const OrderPage = () => {
     <div className="min-h-screen bg-[#f8f9fa] pt-24 md:pt-32 pb-12 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         <header className="mb-8 md:mb-10">
-          <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Your Orders</h1>
+          <h1 className="text-2xl md:text-3xl font-medium text-gray-900 tracking-tight">Your Orders</h1>
           <p className="text-sm text-gray-500 mt-2">Manage your purchases and returns</p>
         </header>
 
         {orders.length === 0 ? (
           <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-gray-200">
             <ShoppingBag className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-            <h2 className="text-lg font-bold text-gray-900">No orders yet</h2>
-            <Link to="/" className="mt-6 inline-block bg-black text-white px-8 py-3 rounded-full font-bold text-sm hover:scale-105 transition-transform">Start Shopping</Link>
+            <h2 className="text-lg font-medium text-gray-900">No orders yet</h2>
+            <Link to="/" className="mt-6 inline-block bg-black text-white px-8 py-3 rounded-full font-medium text-sm hover:scale-105 transition-transform">Start Shopping</Link>
           </div>
         ) : (
           <div className="space-y-6">
@@ -312,14 +312,14 @@ const OrderPage = () => {
                 {/* Header */}
                 <div className="px-5 py-4 bg-gray-50/50 flex items-center justify-between border-b border-gray-100">
                   <div className="flex gap-4 items-center">
-                    <span className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest">
+                    <span className="text-[10px] md:text-xs font-medium text-gray-400 uppercase tracking-widest">
                       #{order._id.slice(-8).toUpperCase()}
                     </span>
                     <span className="text-[10px] md:text-xs font-medium text-gray-400 hidden sm:inline-block">
                       {formatDate(order.createdAt)}
                     </span>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-[10px] font-bold border flex items-center gap-1.5 ${getStatusColor(order.orderStatus)}`}>
+                  <div className={`px-3 py-1 rounded-full text-[10px] font-medium border flex items-center gap-1.5 ${getStatusColor(order.orderStatus)}`}>
                     {order.orderStatus === "Cancelled" && <AlertCircle size={10} />}
                     {order.orderStatus === "Delivered" && <CheckCircle size={10} />}
                     {order.orderStatus}
@@ -334,11 +334,11 @@ const OrderPage = () => {
                         <img src={getImageUrl(item.image)} alt={item.name} className="w-full h-full object-cover mix-blend-multiply" />
                       </div>
                       <div className="flex-1 min-w-0 py-1">
-                        <h4 className="text-sm font-bold text-gray-900 truncate">{item.name}</h4>
+                        <h4 className="text-sm font-medium text-gray-900 truncate">{item.name}</h4>
                         <p className="text-xs text-gray-500 mt-1">Size: {item.variant || 'Std'} • Qty: {item.quantity}</p>
                       </div>
                       <div className="py-1">
-                        <p className="text-sm font-bold text-gray-900">₹{item.price.toLocaleString()}</p>
+                        <p className="text-sm font-medium text-gray-900">₹{item.price.toLocaleString()}</p>
                       </div>
                     </div>
                   ))}
@@ -347,22 +347,22 @@ const OrderPage = () => {
                 {/* Footer */}
                 <div className="px-5 py-4 bg-white border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex justify-between sm:block">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Amount</p>
-                    <p className="text-lg font-black text-gray-900">₹{order.totalAmount.toLocaleString()}</p>
+                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Total Amount</p>
+                    <p className="text-lg font-medium text-gray-900">₹{order.totalAmount.toLocaleString()}</p>
                   </div>
 
                   <div className="flex items-center gap-3 w-full sm:w-auto">
                     {order.orderStatus === "Processing" && (
                       <button
                         onClick={() => setCancelOrderData(order)}
-                        className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition-all"
+                        className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl text-xs font-medium text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition-all"
                       >
                         Cancel Order
                       </button>
                     )}
                     <button
                       onClick={() => setSelectedOrder(order)}
-                      className="flex-1 sm:flex-none bg-black text-white text-xs font-bold px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-lg shadow-gray-200"
+                      className="flex-1 sm:flex-none bg-black text-white text-xs font-medium px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-lg shadow-gray-200"
                     >
                       Track Order <ArrowRight size={14} />
                     </button>
