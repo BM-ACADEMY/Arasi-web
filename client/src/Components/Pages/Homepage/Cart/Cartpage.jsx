@@ -48,7 +48,7 @@ const CartPage = () => {
             Discover our collection of artisanal soaps, handcrafted for the modern connoisseur.
           </p>
           <Link
-            to="/products"
+            to="/shop"
             className="inline-flex items-center gap-3 px-12 py-4 bg-[#2C2C2C] text-[#F9F8F6] text-[11px] tracking-[0.3em] uppercase hover:bg-[#404040] transition-all"
           >
             Shop Collection
