@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Instagram, Twitter, Facebook, Youtube } from 'lucide-react';
+import { Instagram, Twitter, Facebook, Youtube, Phone, Mail, MapPin } from 'lucide-react';
 import api from '@/services/api';
 import logo from "@/assets/logo.png";
 
@@ -9,11 +9,10 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   // Static Links
-  const navLinks = [
+   const navLinks = [
     { name: "Home", path: "/" },
-    { name: "Shop", path: "/shop" },
-    { name: "Our Story", path: "/about" },
-    { name: "Benefits", path: "/why-arasi" },
+    { name: "Product", path: "/shop" },
+    { name: "About", path: "/about" },
     { name: "Contact", path: "/contact" },
   ];
 
@@ -33,7 +32,7 @@ const Footer = () => {
   }, []);
 
   return (
-    <footer className="bg-[#f8f8f8] pt-16 pb-8 px-6 md:px-12 border-t border-gray-100">
+    <footer className="bg-[#f8f8f8] pt-16 pb-8 px-6 md:px-12 border-t border-gray-200">
       <div className="max-w-screen-2xl mx-auto">
 
         {/* Main Footer Grid - Now 4 Columns */}
@@ -55,13 +54,34 @@ const Footer = () => {
 
           {/* Column 2: Contact Information */}
           <div className="space-y-6">
-            <h4 className="text-xl font-serif font-medium text-gray-900">Contact Us</h4>
-            <div className="space-y-4 text-gray-500 text-sm">
-              <p>Find a location nearest<br />you. See <Link to="/stores" className="font-bold text-gray-900 border-b border-gray-900">Our Stores</Link></p>
-              <p className="text-gray-900 font-bold text-base">+391 (0)35 2568 4593</p>
-              <p>hello@domain.com</p>
-            </div>
-          </div>
+  <h4 className="text-xl font-serif font-medium text-gray-900">Contact Us</h4>
+  <div className="space-y-4 text-gray-500 text-sm">
+    
+    {/* Address/Location */}
+    <div className="flex items-start gap-3">
+      <MapPin size={18} className="text-gray-900 shrink-0 mt-0.5" />
+      <p className='cursor-pointer'>
+        No. 2, East Coast Road, Bahour,
+Kattukuppam, Pondicherry 607402, India
+      </p>
+    </div>
+
+    {/* Phone */}
+    <div className="flex items-center gap-3">
+      <Phone size={18} className="text-gray-900 shrink-0" />
+      <p className="text-gray-900 cursor-pointer text-base">+91 8682967445</p>
+    </div>
+
+    {/* Email */}
+    <div className="flex items-center gap-3">
+      <Mail size={18} className="text-gray-900 shrink-0" />
+      <a href="mailto:arasisoap@gmail.com" className="hover:text-gray-900 transition-colors">
+       arasisoap@gmail.com
+      </a>
+    </div>
+
+  </div>
+</div>
 
           {/* Column 3: Useful Links */}
           <div className="space-y-6">
@@ -100,15 +120,15 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="text-gray-500 text-sm">
-            <span>© Arasi {currentYear} | Powered by Bmtechx.in</span>
+            <span>© Arasi {currentYear} | All rights reserved.</span>
           </div>
 
-          <div className="flex items-center gap-5">
+          {/* <div className="flex items-center gap-5">
             <a href="#" className="text-gray-400 hover:text-gray-900 transition-colors"><Instagram size={20} /></a>
             <a href="#" className="text-gray-400 hover:text-gray-900 transition-colors"><Twitter size={20} /></a>
             <a href="#" className="text-gray-400 hover:text-gray-900 transition-colors"><Facebook size={20} /></a>
             <a href="#" className="text-gray-400 hover:text-gray-900 transition-colors"><Youtube size={20} /></a>
-          </div>
+          </div> */}
         </div>
 
       </div>

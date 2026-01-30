@@ -20,6 +20,10 @@ import CartPage from "@/Components/Pages/Homepage/Cart/Cartpage";
 import CheckoutPage from "@/Components/Checkoutpage/Checkoutpage";
 import OrderPage from "@/Components/Order/Orderpage";
 import Footer from "@/Components/Layout/Footer";
+import UserProfile from "@/Components/Pages/Homepage/UserProfile/UserProfile";
+import About from "@/Components/Pages/Homepage/About/About";
+import ContactPage from "@/Components/Pages/Homepage/Contact/ContactPage";
+// import RaiseComplaint from "@/Admin/Pages/Complaint/RaiseComplaint";
 
 const MainLayout = () => (
   <>
@@ -46,12 +50,16 @@ function Mainroute() {
         
         {/* --- FIX: Explicit Shop Route (Must come BEFORE /:categorySlug) --- */}
         <Route path="/shop" element={<ProductListingPage />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<ContactPage />} />
         
         {/* Protected Routes */}
         <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>
            <Route path="/cart" element={<CartPage/>} />
            <Route path="/checkout" element={<CheckoutPage />} />
            <Route path="/orders" element={<OrderPage />} />
+           <Route path="/profile" element={<UserProfile />} />
+           {/* <Route path="/support" element={<RaiseComplaint />} /> */}
         </Route>
 
         {/* --- SHOP ROUTES --- */}

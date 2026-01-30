@@ -6,12 +6,13 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import AdminLayout from "@/Admin/Layout/AdminLayout";
 
 // Pages
-import DashboardHome from "@/Admin/Pages/Categories/Categories";
+
 import CategoryPage from "@/Admin/Pages/Categories/Categories";
 import Subcategories from "@/Admin/Pages/Subcategories/Subcategories";
 import Product from "@/Admin/Pages/Product/Product";
 import AdminOrderPage from "@/Admin/Pages/Order/Order";
 import AdminBanner from "@/Admin/Pages/AdminBanner/AdminBanner";
+import Dashboard from "@/Admin/Pages/Dashboard/Dashboard";
 
 const AdminRoutes = () => {
   return (
@@ -22,7 +23,7 @@ const AdminRoutes = () => {
         <Route index element={<Navigate to="dashboard" replace />} />
 
         {/* Dashboard */}
-        <Route path="dashboard" element={<>Dashboard</>} />
+        <Route path="dashboard" element={<Dashboard/>} />
 
         {/* Category Management */}
         <Route path="categories" element={<CategoryPage />} />

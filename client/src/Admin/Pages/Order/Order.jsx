@@ -4,7 +4,7 @@ import {
   Package, Truck, CheckCircle, Clock, XCircle,
   User, Calendar, X, CreditCard, MapPin, AlertTriangle,
   Eye, ChevronRight, Search, Filter, ArrowUpRight,
-  MoreHorizontal, Phone, Mail
+  MoreHorizontal, Phone, Mail, ChevronDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -17,13 +17,23 @@ const formatDate = (dateString) => {
   });
 };
 
-const getStatusStyles = (status) => {
+const getStatusBadgeStyles = (status) => {
   switch (status) {
-    case "Delivered": return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20";
-    case "Shipped": return "bg-blue-50 text-blue-700 ring-1 ring-blue-600/20";
-    case "Cancelled": return "bg-rose-50 text-rose-700 ring-1 ring-rose-600/20";
-    case "Processing": return "bg-amber-50 text-amber-700 ring-1 ring-amber-600/20";
-    default: return "bg-gray-50 text-gray-600 ring-1 ring-gray-500/20";
+    case "Delivered": return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-600/20 border-emerald-200";
+    case "Shipped": return "bg-blue-100 text-blue-800 ring-1 ring-blue-600/20 border-blue-200";
+    case "Cancelled": return "bg-rose-100 text-rose-800 ring-1 ring-rose-600/20 border-rose-200";
+    case "Processing": return "bg-amber-100 text-amber-800 ring-1 ring-amber-600/20 border-amber-200";
+    default: return "bg-gray-100 text-gray-800 ring-1 ring-gray-600/20 border-gray-200";
+  }
+};
+
+const getRowStyles = (status) => {
+  switch (status) {
+    case "Delivered": return "bg-emerald-50/50 hover:bg-emerald-50 border-l-4 border-l-emerald-500";
+    case "Shipped": return "bg-blue-50/50 hover:bg-blue-50 border-l-4 border-l-blue-500";
+    case "Cancelled": return "bg-rose-50/50 hover:bg-rose-50 border-l-4 border-l-rose-500";
+    case "Processing": return "bg-amber-50/50 hover:bg-amber-50 border-l-4 border-l-amber-500";
+    default: return "bg-white hover:bg-gray-50 border-l-4 border-l-gray-300";
   }
 };
 
@@ -49,7 +59,6 @@ const OrderDrawer = ({ order, onClose, SERVER_URL }) => {
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
         className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col border-l border-gray-100"
       >
-        {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
           <div>
             <h2 className="text-xl font-bold text-gray-900">Order #{order._id.slice(-6).toUpperCase()}</h2>
@@ -60,12 +69,9 @@ const OrderDrawer = ({ order, onClose, SERVER_URL }) => {
           </button>
         </div>
 
-        {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
-
-          {/* Status Section */}
           <div className="flex gap-3">
-             <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${getStatusStyles(order.orderStatus)}`}>
+             <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 border ${getStatusBadgeStyles(order.orderStatus)}`}>
                 <div className="w-1.5 h-1.5 rounded-full bg-current" />
                 {order.orderStatus}
              </span>
@@ -75,7 +81,6 @@ const OrderDrawer = ({ order, onClose, SERVER_URL }) => {
              </span>
           </div>
 
-          {/* Cancellation Alert */}
           {order.orderStatus === "Cancelled" && (
             <div className="p-4 bg-rose-50 rounded-xl border border-rose-100 flex gap-3">
               <AlertTriangle className="text-rose-500 shrink-0" size={20} />
@@ -86,7 +91,6 @@ const OrderDrawer = ({ order, onClose, SERVER_URL }) => {
             </div>
           )}
 
-          {/* Customer Details */}
           <div>
             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
               <User size={16} className="text-gray-400" /> Customer
@@ -113,7 +117,6 @@ const OrderDrawer = ({ order, onClose, SERVER_URL }) => {
             </div>
           </div>
 
-          {/* Shipping Address */}
           <div>
             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
               <MapPin size={16} className="text-gray-400" /> Shipping
@@ -126,7 +129,6 @@ const OrderDrawer = ({ order, onClose, SERVER_URL }) => {
             </div>
           </div>
 
-          {/* Order Items */}
           <div>
             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
               <Package size={16} className="text-gray-400" /> Items ({order.orderItems.length})
@@ -158,7 +160,6 @@ const OrderDrawer = ({ order, onClose, SERVER_URL }) => {
           </div>
         </div>
 
-        {/* Footer Total */}
         <div className="p-6 bg-gray-50 border-t border-gray-200">
           <div className="flex justify-between items-center mb-2">
             <span className="text-gray-500 text-sm">Subtotal</span>
@@ -227,20 +228,31 @@ const AdminOrderPage = () => {
   const stats = useMemo(() => ({
     total: orders.length,
     pending: orders.filter(o => o.orderStatus === "Processing").length,
-    revenue: orders.reduce((acc, curr) => acc + (curr.paymentInfo?.razorpayPaymentId ? curr.totalAmount : 0), 0)
+    // 1. UPDATED: Revenue calculation logic to exclude Cancelled orders
+    revenue: orders.reduce((acc, curr) => {
+      if (curr.orderStatus === "Cancelled") return acc; // Skip if cancelled
+      return acc + (curr.paymentInfo?.razorpayPaymentId ? curr.totalAmount : 0);
+    }, 0)
   }), [orders]);
 
-  // --- UPDATE HANDLER ---
+  // --- UPDATE HANDLER (OPTIMISTIC UPDATE) ---
   const handleStatusUpdate = async (orderId, newStatus) => {
+    const previousOrders = [...orders];
+
+    setOrders(prev => prev.map(o => o._id === orderId ? { ...o, orderStatus: newStatus } : o));
     setUpdatingId(orderId);
+
     try {
       const { data } = await api.put(`/orders/admin/order/${orderId}`, { status: newStatus });
       if (data.success) {
         toast.success(`Order marked as ${newStatus}`);
-        setOrders(prev => prev.map(o => o._id === orderId ? { ...o, orderStatus: newStatus } : o));
+      } else {
+        setOrders(previousOrders);
+        toast.error("Failed to update status");
       }
     } catch (error) {
-      toast.error("Update failed");
+      setOrders(previousOrders);
+      toast.error("Network error: Could not update");
     } finally {
       setUpdatingId(null);
     }
@@ -254,18 +266,13 @@ const AdminOrderPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50 font-sans p-6 pb-20">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-8xl mx-auto space-y-8">
 
         {/* 1. Header & Stats */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Orders</h1>
             <p className="text-gray-500 text-sm mt-1">Manage and track your store shipments.</p>
-          </div>
-          <div className="flex gap-3">
-             <button onClick={fetchOrders} className="p-2.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors">
-               <ArrowUpRight size={18} />
-             </button>
           </div>
         </div>
 
@@ -308,11 +315,11 @@ const AdminOrderPage = () => {
           </div>
         </div>
 
-        {/* 3. Orders Table (Desktop) / Cards (Mobile) */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        {/* 3. Orders Table */}
+        <div className="bg-transparent space-y-3">
 
           {/* Desktop Table Header */}
-          <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-gray-200 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 shadow-sm">
             <div className="col-span-2">Order ID</div>
             <div className="col-span-3">Customer</div>
             <div className="col-span-2">Date</div>
@@ -322,9 +329,9 @@ const AdminOrderPage = () => {
           </div>
 
           {/* List Content */}
-          <div className="divide-y divide-gray-100">
+          <div className="space-y-3">
             {filteredOrders.length === 0 ? (
-              <div className="p-10 text-center">
+              <div className="p-10 text-center bg-white rounded-xl border border-gray-200">
                  <div className="inline-flex justify-center items-center w-16 h-16 rounded-full bg-gray-100 mb-4">
                    <Package className="text-gray-400" size={32} />
                  </div>
@@ -338,9 +345,9 @@ const AdminOrderPage = () => {
                 return (
                   <motion.div
                     layout
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                     key={order._id}
-                    className="group hover:bg-gray-50 transition-colors"
+                    className={`rounded-xl shadow-sm transition-all ${getRowStyles(order.orderStatus)}`}
                   >
                     {/* Desktop Row */}
                     <div className="hidden md:grid grid-cols-12 gap-4 p-4 items-center">
@@ -355,36 +362,43 @@ const AdminOrderPage = () => {
                         {formatDate(order.createdAt)}
                       </div>
                       <div className="col-span-2">
-                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyles(order.orderStatus)}`}>
+                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadgeStyles(order.orderStatus)}`}>
                            {order.orderStatus}
                          </span>
                       </div>
                       <div className="col-span-1 text-sm font-bold text-gray-900">
                         ₹{order.totalAmount.toLocaleString()}
                       </div>
-                      <div className="col-span-2 flex justify-end items-center gap-2">
+                      <div className="col-span-2 flex justify-end items-center gap-3">
+                        
+                        {/* 2. UPDATED: Removed Cancelled from options (unless already cancelled) */}
                         <div className="relative">
                           {updatingId === order._id ? (
-                            <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                           ) : (
-                            <select
-                              value={order.orderStatus}
-                              onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
-                              disabled={["Delivered", "Cancelled"].includes(order.orderStatus)}
-                              className="text-xs border-none bg-transparent focus:ring-0 text-gray-500 hover:text-indigo-600 cursor-pointer outline-none font-medium text-right pr-6"
-                            >
-                              <option value="Processing">Processing</option>
-                              <option value="Shipped">Shipped</option>
-                              <option value="Delivered">Delivered</option>
-                              <option value="Cancelled">Cancelled</option>
-                            </select>
+                            <div className="relative group/select">
+                                <select
+                                    value={order.orderStatus}
+                                    onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
+                                    disabled={["Delivered", "Cancelled"].includes(order.orderStatus)}
+                                    className={`appearance-none pl-3 pr-8 py-1.5 rounded-full text-xs font-bold cursor-pointer outline-none focus:ring-2 focus:ring-offset-1 transition-all border hover:border-black/10 ${getStatusBadgeStyles(order.orderStatus)}`}
+                                >
+                                    <option value="Processing">Processing</option>
+                                    <option value="Shipped">Shipped</option>
+                                    <option value="Delivered">Delivered</option>
+                                    {/* Removed 'Cancelled' from options unless it IS Cancelled */}
+                                    {order.orderStatus === "Cancelled" && <option value="Cancelled">Cancelled</option>}
+                                </select>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" size={14} />
+                            </div>
                           )}
                         </div>
+
                         <button
                           onClick={() => setSelectedOrder(order)}
-                          className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                          className="p-2 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all shadow-sm"
                         >
-                          <ChevronRight size={18} />
+                          <ChevronRight size={16} />
                         </button>
                       </div>
                     </div>
@@ -396,31 +410,32 @@ const AdminOrderPage = () => {
                           <span className="text-xs font-bold font-mono text-gray-500">#{order._id.slice(-6).toUpperCase()}</span>
                           <h4 className="text-sm font-bold text-gray-900 mt-1">{order.user?.name}</h4>
                         </div>
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${getStatusStyles(order.orderStatus)}`}>
-                          {order.orderStatus}
-                        </span>
+                          <div className="relative">
+                             <select
+                                value={order.orderStatus}
+                                onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
+                                disabled={["Delivered", "Cancelled"].includes(order.orderStatus)}
+                                className={`appearance-none pl-3 pr-8 py-1.5 rounded-full text-xs font-bold cursor-pointer outline-none border ${getStatusBadgeStyles(order.orderStatus)}`}
+                            >
+                                <option value="Processing">Processing</option>
+                                <option value="Shipped">Shipped</option>
+                                <option value="Delivered">Delivered</option>
+                                {/* Removed 'Cancelled' from options unless it IS Cancelled */}
+                                {order.orderStatus === "Cancelled" && <option value="Cancelled">Cancelled</option>}
+                            </select>
+                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" size={14} />
+                         </div>
                       </div>
                       <div className="flex justify-between items-center text-sm text-gray-500">
                         <span>{formatDate(order.createdAt)}</span>
                         <span className="font-bold text-gray-900">₹{order.totalAmount.toLocaleString()}</span>
                       </div>
-                      <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
-                         <select
-                              value={order.orderStatus}
-                              onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
-                              disabled={["Delivered", "Cancelled"].includes(order.orderStatus)}
-                              className="bg-gray-50 border border-gray-200 text-xs rounded-md py-1.5 px-2 outline-none"
-                            >
-                              <option value="Processing">Processing</option>
-                              <option value="Shipped">Shipped</option>
-                              <option value="Delivered">Delivered</option>
-                              <option value="Cancelled">Cancelled</option>
-                            </select>
+                      <div className="pt-3 border-t border-black/5 flex justify-end">
                         <button
                           onClick={() => setSelectedOrder(order)}
-                          className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                          className="text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
                         >
-                          View Details
+                          View Details <ChevronRight size={14} />
                         </button>
                       </div>
                     </div>

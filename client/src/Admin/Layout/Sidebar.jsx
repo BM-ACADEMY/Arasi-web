@@ -73,7 +73,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className="flex items-center gap-3">
             <img
               // Optional: Use user.avatar if available, else fallback
-              src={user?.avatar || "https://i.pravatar.cc/150?img=12"}
+              src="https://imgs.search.brave.com/JqLkOW5ls518f8t5iH3rCS376Any3y5s4Jko9jGBHgg/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly93d3cu/a2luZHBuZy5jb20v/cGljYy9tLzI0LTI0/ODI1M191c2VyLXBy/b2ZpbGUtZGVmYXVs/dC1pbWFnZS1wbmct/Y2xpcGFydC1wbmct/ZG93bmxvYWQucG5n"
               alt="Admin"
               className="h-10 w-10 rounded-full border border-gray-600"
             />

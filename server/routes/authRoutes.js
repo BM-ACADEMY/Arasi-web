@@ -7,7 +7,9 @@ const {
   forgotPassword,
   resendOtp,
   resetPassword ,
-  verifyEmail
+  verifyEmail,
+  getUserProfile,
+  updateUserProfile
 } = require("../controllers/authController");
 const { protect, authorize } = require("../middleware/authMiddleware");
 
@@ -18,6 +20,10 @@ router.post("/forgot-password", forgotPassword);
 router.post("/resend-otp", resendOtp);
 router.post("/reset-password", resetPassword);
 router.post("/verify-email", verifyEmail);
+
+// --- NEW PROFILE ROUTE ---
+router.get("/profile", protect, getUserProfile)
+router.put("/profile", protect, updateUserProfile);
 
 
 // Example Protected Admin Route

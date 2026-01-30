@@ -164,10 +164,10 @@ const Categories = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-12">
+    <div className="min-h-screen  font-sans text-slate-800 pb-12">
       {/* ─── Header Section (Fixed) ────────────────────────── */}
       <header className="bg-white border-b border-slate-200  top-0 z-50 shadow-sm backdrop-blur-md bg-white/90">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight truncate">Categories</h1>
             <p className="text-sm text-slate-500 hidden sm:block truncate">Manage your product catalog structure</p>
@@ -184,7 +184,7 @@ const Categories = () => {
       </header>
 
       {/* ─── Main Content ────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
 
           {/* Toolbar */}

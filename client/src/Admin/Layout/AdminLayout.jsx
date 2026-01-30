@@ -148,12 +148,6 @@ const AdminLayout = () => {
                     {user?.role || "User"}
                 </p>
               </div>
-              <img
-                src={user?.avatar || "https://i.pravatar.cc/150?img=12"}
-                className="h-9 w-9 rounded-full border border-gray-200"
-                alt="Profile"
-              />
-              <ChevronDown size={16} className="text-gray-400" />
             </div>
 
           </div>
@@ -161,7 +155,7 @@ const AdminLayout = () => {
 
         {/* PAGE CONTENT AREA */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-6">
-          <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-8xl">
             <Outlet />
           </div>
         </main>

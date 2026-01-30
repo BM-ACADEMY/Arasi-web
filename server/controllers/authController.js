@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendEmail");
 const crypto = require("crypto"); // Built-in node module for random OTP
+const Order = require("../models/orderModel");
 
 // --- Helper: Generate JWT ---
 const generateToken = (id) => {
@@ -271,3 +272,71 @@ exports.resetPassword = async (req, res) => {
 };
 
 
+
+exports.getUserProfile = async (req, res) => {
+  try {
+    // 1. Get Basic User Info
+    const user = await User.findById(req.user.id).select("-password -otp -otpExpires");
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // 2. Get All Orders to extract addresses
+    const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
+
+    // 3. Extract Unique Addresses
+    const uniqueAddresses = [];
+    const seen = new Set();
+
+    orders.forEach((order) => {
+      const addr = order.shippingAddress;
+      // Create a unique key based on address content
+      const key = `${addr.address}-${addr.city}-${addr.pincode}-${addr.phone}`.toLowerCase();
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueAddresses.push({
+          ...addr, // address, city, state, pincode, phone
+          _id: order._id, // use order id as a temporary unique key for lists
+          lastUsed: order.createdAt
+        });
+      }
+    });
+
+    res.status(200).json({ 
+      success: true, 
+      user: { 
+        ...user.toObject(), 
+        addresses: uniqueAddresses 
+      } 
+    });
+
+  } catch (error) {
+    console.error("Profile Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Update User Profile (Name Only)
+// @route   PUT /api/auth/profile
+exports.updateUserProfile = async (req, res) => {
+  try {
+    const { name } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    user.name = name || user.name;
+    // Email is intentionally NOT updated here for security
+    
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Profile updated successfully", user });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

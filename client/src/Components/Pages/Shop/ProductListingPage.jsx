@@ -58,7 +58,7 @@ const ProductListingPage = () => {
 
   return (
     /* REMOVED flex justify-center to keep content left-aligned */
-    <section className="pt-27  md:pt-45 pb-24 bg-gray-50 w-full min-h-screen">
+    <section className="pt-27  md:pt-45 pb-24 bg-[#faf9f6] w-full min-h-screen">
       <div className="w-full max-w-[1400px] px-6 mx-auto">
 
         {/* Header & Breadcrumbs - Changed items-end to items-start */}

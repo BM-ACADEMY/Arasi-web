@@ -19,8 +19,9 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage, fileFilter });
 
 /**
- * Resize, Compress & Save Image
- * Returns the relative path: "uploads/folder/filename.webp"
+ * Save Image Without Quality Loss
+ * - Maintains original resolution (Removed resize)
+ * - Uses Lossless WebP compression (Perfect quality)
  */
 const saveImage = async (fileBuffer, folderName, fileName) => {
   const uploadDir = path.join("public", "uploads", folderName);
@@ -33,10 +34,10 @@ const saveImage = async (fileBuffer, folderName, fileName) => {
   const finalFileName = `${cleanFileName}-${Date.now()}.webp`;
   const fullPath = path.join(uploadDir, finalFileName);
 
+  // CHANGED: Removed .resize() and enabled lossless mode
   await sharp(fileBuffer)
-    .resize(800, 800, { fit: "inside", withoutEnlargement: true })
     .toFormat("webp")
-    .webp({ quality: 80 })
+    .webp({ lossless: true }) // Uses lossless compression (no quality loss)
     .toFile(fullPath);
 
   return `uploads/${folderName}/${finalFileName}`;

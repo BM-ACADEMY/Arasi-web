@@ -208,7 +208,7 @@ const AdminBanner = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 pb-20 font-sans">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-8xl mx-auto">
 
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">

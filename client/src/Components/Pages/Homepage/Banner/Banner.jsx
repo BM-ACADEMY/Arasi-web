@@ -58,7 +58,7 @@ const Banner = () => {
 
   return (
     // MAIN CONTAINER
-    <section className="relative w-full h-[75vh] md:h-[65vh] min-h-[550px] overflow-hidden bg-black mt-16 md:mt-24 lg:mt-41">
+    <section className="relative w-full h-[75vh] md:h-[80vh] min-h-[550px] overflow-hidden bg-black mt-13 md:mt-15 lg:mt-32">
       
       <AnimatePresence mode='wait'>
         <motion.div

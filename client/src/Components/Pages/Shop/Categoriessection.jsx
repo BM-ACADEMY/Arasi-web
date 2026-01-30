@@ -34,13 +34,14 @@ const CategoriesSection = () => {
   if (!categories.length) return null;
 
   return (
-    <section className="relative py-0 w-full flex justify-center bg-[#eee6af6c]">
+    <section className="relative py-0 w-full flex justify-center bg-[#faf9f6]">
+      
 
       <div className="pointer-events-none absolute bottom-0 left-0 w-full h-32 " />
       <div className="w-full max-w-screen-2xl py-9 px-6 md:px-12">
 
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-6 border-b border-gray-200 pb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-6 border-b border-gray-300 pb-6">
           <div className="space-y-2 w-full md:w-auto">
             <h2 className="text-2xl md:text-3xl font-serif text-gray-900 tracking-tight">Shop by Category</h2>
             <p className="text-gray-500 text-sm font-medium tracking-wide flex items-center gap-2">
@@ -48,10 +49,10 @@ const CategoriesSection = () => {
             </p>
           </div>
           <div className="flex gap-3 self-end md:self-auto">
-            <button onClick={() => scroll('left')} className="p-2.5 rounded-full border border-gray-200 hover:bg-gray-900 hover:text-white transition-all duration-300 text-gray-400">
+            <button onClick={() => scroll('left')} className="p-2.5 rounded-full border border-gray-400 hover:bg-gray-900 hover:text-white transition-all duration-300 text-gray-400">
               <ChevronLeft size={18} />
             </button>
-            <button onClick={() => scroll('right')} className="p-2.5 rounded-full border border-gray-200 hover:bg-gray-900 hover:text-white transition-all duration-300 text-gray-400">
+            <button onClick={() => scroll('right')} className="p-2.5 rounded-full border border-gray-400 hover:bg-gray-900 hover:text-white transition-all duration-300 text-gray-400">
               <ChevronRight size={18} />
             </button>
           </div>
@@ -86,9 +87,9 @@ const CategoriesSection = () => {
                 </h3>
 
                 {/* UPDATED: Changed text color to amber-600 and added font-medium */}
-                <span className="text-[11px] font-medium text-blue-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-1">
+                {/* <span className="text-[11px] font-medium text-blue-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-1">
                   Explore <ArrowRight size={12} />
-                </span>
+                </span> */}
               </motion.div>
             </Link>
           ))}

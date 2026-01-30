@@ -6,6 +6,7 @@ const {
   getUserOrders,
   getAllOrders,       // <--- Import
   updateOrderStatus,
+  getDashboardStats,
   cancelOrder   // <--- Import
 } = require("../controllers/orderController");
 
@@ -17,9 +18,13 @@ router.get("/my-orders", protect, getUserOrders);
 
 router.put("/:id/cancel", protect, cancelOrder);
 
+
+
 // --- ADMIN ROUTES ---
 router.get("/admin/all-orders", protect, authorize("admin"), getAllOrders);
 router.put("/admin/order/:id", protect, authorize("admin"), updateOrderStatus);
+
+router.get("/admin/stats", protect, authorize("admin"), getDashboardStats);
 
 
 

@@ -9,11 +9,11 @@ import {
   LogOut, 
   Package, 
   Settings, 
-  ChevronDown, 
   LayoutDashboard,
   Phone,
   Mail,
-  Search // Unified Search Icon
+  Search, 
+  FileText
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import SearchBar from "./SearchBar";
@@ -38,43 +38,35 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Home", path: "/" },
-    { name: "Shop", path: "/shop" },
-    { name: "Our Story", path: "/about" },
-    { name: "Benefits", path: "/why-arasi" },
+    { name: "Product", path: "/shop" },
+    { name: "About", path: "/about" },
     { name: "Contact", path: "/contact" },
   ];
-
-  const topBarContent = (
-    <div className="flex items-center gap-12 pr-12">
-        <span>FREE SHIPPING ON ALL U.S</span>
-        <span>WE ALSO MAKE EMAILS.</span>
-        <span>THE COMPLETE EXTRA SALE 20% OFF LOOK</span>
-    </div>
-  );
 
   return (
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white ${
-        isScrolled ? "shadow-md" : ""
+        isScrolled ? "shadow-md" : "border-b border-gray-100 shadow-sm"
       }`}>
         
-        {/* --- 1. TOP BAR (Marquee) --- */}
-        <div className="bg-[#eb2b32] text-white text-[10px] md:text-xs font-bold tracking-widest py-2 overflow-hidden flex whitespace-nowrap">
-            <motion.div className="flex flex-shrink-0" initial={{ x: "0%" }} animate={{ x: "-100%" }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }}>{topBarContent}</motion.div>
-            <motion.div className="flex flex-shrink-0" initial={{ x: "0%" }} animate={{ x: "-100%" }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }}>{topBarContent}</motion.div>
-            <motion.div className="flex flex-shrink-0" initial={{ x: "0%" }} animate={{ x: "-100%" }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }}>{topBarContent}</motion.div>
-        </div>
-
-        {/* --- 2. UTILITY BAR (Desktop Only) --- */}
-        <div className="hidden lg:block border-b border-gray-200">
+        {/* --- 1. UTILITY BAR (Desktop Only) --- */}
+        <div className="hidden lg:block border-b border-gray-300">
             <div className="container mx-auto px-8 py-2 flex justify-between items-center text-xs text-slate-600 font-medium">
                 <div className="flex items-center gap-6">
-                    <span className="flex items-center gap-2 hover:text-[#006baf] cursor-pointer"><Phone size={14} /> +84 123 456 789</span>
-                    <span className="flex items-center gap-2 hover:text-[#006baf] cursor-pointer"><Mail size={14} /> example@domain.com</span>
+                    <span className="flex items-center gap-2 hover:text-[#006baf] cursor-pointer transition-colors">
+                      <Phone size={14} className="text-[#006baf]" /> +91 8682967445
+                    </span>
+                    <span className="flex items-center gap-2 hover:text-[#006baf] cursor-pointer transition-colors">
+                      <Mail size={14} className="text-[#006baf]" />arasisoap@gmail.com
+                    </span>
+                    <span className="flex items-center gap-2 hover:text-[#006baf] transition-colors cursor-default">
+                      <FileText size={14} className="text-[#006baf]" /> 
+                      GST: <span>34CQMPS5041M1ZB</span>
+                    </span>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="relative group z-50">
-                        <Link to={user ? "/profile" : "/login"} className="flex items-center gap-1 hover:text-[#006baf] py-2">
+                        <Link to={user ? "/profile" : "/login"} className="flex items-center gap-1 hover:text-[#006baf] py-2 transition-colors">
                              <User size={18} /> {user && <span className="max-w-[100px] truncate">{user.name}</span>}
                         </Link>
                         {user && (
@@ -96,27 +88,36 @@ const Navbar = () => {
                            </div>
                         )}
                     </div>
-                    <Link to="/cart" className="relative hover:text-[#006baf]"><ShoppingBag size={18} />{cartCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-[#eb2b32] text-white text-[9px] font-bold w-3.5 h-3.5 flex items-center justify-center rounded-full">{cartCount}</span>}</Link>
+                    <Link to="/cart" className="relative hover:text-[#006baf] transition-colors">
+                      <ShoppingBag size={18} />
+                      {cartCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-[#eb2b32] text-white text-[9px] font-bold w-3.5 h-3.5 flex items-center justify-center rounded-full">{cartCount}</span>}
+                    </Link>
                 </div>
             </div>
         </div>
 
-        {/* --- 3. MAIN NAVIGATION --- */}
+        {/* --- 2. MAIN NAVIGATION --- */}
         <div className="container mx-auto px-4 md:px-8 py-3 lg:py-4">
             <div className="flex items-center justify-between">
                 
-                {/* LEFT: Mobile Menu Button & Desktop Links */}
-                <div className="flex-1 flex items-center justify-start">
+                {/* LEFT: Logo & Mobile Toggle */}
+                <div className="flex-1 flex items-center justify-start gap-4">
                     <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="lg:hidden p-1 text-slate-800 hover:text-[#006baf]">
                         <Menu size={24} />
                     </button>
+                    <Link to="/" className="flex-shrink-0">
+                      <img src={logo} alt="Arasi Soap" className="h-8 md:h-12 w-auto object-contain" />
+                    </Link>
+                </div>
 
-                    <ul className="hidden lg:flex items-center gap-6">
+                {/* CENTER: Nav Links (Desktop Only) */}
+                <div className="hidden lg:flex flex-initial">
+                    <ul className="flex items-center gap-8">
                         {navLinks.map((link) => (
                             <li key={link.name}>
                               <Link
                                 to={link.path}
-                                className={`text-sm sm:text-[13px] md:text-md font-medium font-serif tracking-widest capitalize flex items-center gap-1 transition-colors ${
+                                className={`text-sm md:text-md font-medium  tracking-widest capitalize transition-colors ${
                                   location.pathname === link.path
                                     ? "text-[#eb2b32]"
                                     : "text-slate-800 hover:text-[#006baf]"
@@ -125,20 +126,12 @@ const Navbar = () => {
                                 {link.name}
                               </Link>
                             </li>
-
                         ))}
                     </ul>
                 </div>
 
-                {/* CENTER: Logo */}
-                <div className="flex-shrink-0 flex justify-center">
-                    <Link to="/"><img src={logo} alt="Arasi Soap" className="h-8 md:h-12 w-auto object-contain" /></Link>
-                </div>
-
                 {/* RIGHT: Search & Cart */}
                 <div className="flex-1 flex items-center justify-end gap-3 md:gap-4">
-                   
-                   {/* DESKTOP SEARCH ICON (Triggers Drawer) */}
                    <button 
                        onClick={() => setIsSearchOpen(true)} 
                        className="hidden lg:block text-slate-800 hover:text-[#006baf] transition-colors p-1"
@@ -146,7 +139,6 @@ const Navbar = () => {
                        <Search size={22} />
                    </button>
 
-                   {/* MOBILE ICONS */}
                    <div className="flex items-center gap-3 lg:hidden">
                        <button 
                           onClick={() => setIsSearchOpen(true)} 
@@ -154,7 +146,6 @@ const Navbar = () => {
                        >
                            <Search size={22} />
                        </button>
-
                        <Link to="/cart" className="relative text-slate-800 p-1">
                             <ShoppingBag size={22} />
                             {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-[#eb2b32] text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">{cartCount}</span>}
@@ -165,7 +156,6 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* --- RENDER SEARCH DRAWER (Always available) --- */}
       <SearchBar isOpen={isSearchOpen} onToggle={setIsSearchOpen} />
 
       {/* --- MOBILE MENU OVERLAY --- */}
@@ -185,7 +175,7 @@ const Navbar = () => {
               <div className="flex-1 overflow-y-auto px-6 py-4">
                  <div className="space-y-1">
                     {navLinks.map((link) => (
-                        <Link key={link.name} to={link.path} onClick={() => setIsMobileMenuOpen(false)} className={`block py-3 border-b border-gray-50 text-sm font-medium font-serif tracking-wider ${location.pathname === link.path ? "text-[#eb2b32]" : "text-slate-600"}`}>
+                        <Link key={link.name} to={link.path} onClick={() => setIsMobileMenuOpen(false)} className={`block py-3 border-b border-gray-50 text-sm font-medium  tracking-wider ${location.pathname === link.path ? "text-[#eb2b32]" : "text-slate-600"}`}>
                           {link.name}
                         </Link>
                     ))}
@@ -209,7 +199,7 @@ const Navbar = () => {
                           </>
                         )}
                       </div>
-                      <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white bg-red-500 rounded-lg hover:bg-red-600"><LogOut size={16} /> Logout</button>
+                      <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"><LogOut size={16} /> Logout</button>
                   </div>
                 ) : (
                   <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-center gap-2 w-full py-3 bg-[#eb2b32] text-white rounded-lg font-bold"><User size={18} /> Sign In</Link>
