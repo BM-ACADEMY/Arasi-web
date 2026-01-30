@@ -27,7 +27,7 @@ const AboutSection = () => {
       <div className="absolute top-0 w-full h-64 bg-gradient-to-b from-white to-transparent z-0" />
 
       {/* FIXED: Increased pt-32 to pt-48 (12rem) to prevent content hiding under navbars */}
-      <div className="max-w-7xl mx-auto px-6 pt-48 pb-24 relative z-10">
+      <div className="max-w-7xl mx-auto px-6 md:pt-40 pt-25 pb-24 relative z-10">
         
         {/* 1. Header */}
         <motion.div 

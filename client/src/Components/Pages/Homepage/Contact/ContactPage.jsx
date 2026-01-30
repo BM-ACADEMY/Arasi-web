@@ -59,7 +59,7 @@ const ContactPage = () => {
            style={{ backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '32px 32px' }}>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 pt-40 pb-24 relative z-10">
+      <div className="max-w-7xl mx-auto px-6 md:pt-40 pt-25 pb-24 relative z-10">
         
         {/* 1. Page Header */}
         <motion.div 
@@ -103,9 +103,9 @@ const ContactPage = () => {
                 
                 <div className="space-y-8">
                   <div className="flex items-start gap-6 group">
-                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-red-700 transition-colors duration-300">
+                    {/* <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-red-700 transition-colors duration-300">
                       <Phone size={20} className="text-white" />
-                    </div>
+                    </div> */}
                     <div>
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Call Us</p>
                       <p className="font-mono text-lg">+91 8682967445</p>
@@ -114,9 +114,9 @@ const ContactPage = () => {
                   </div>
 
                   <div className="flex items-start gap-6 group">
-                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-red-700 transition-colors duration-300">
+                    {/* <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-red-700 transition-colors duration-300">
                       <Mail size={20} className="text-white" />
-                    </div>
+                    </div> */}
                     <div>
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Email Us</p>
                       <p className="font-mono text-lg">arasisoap@gmail.com</p>
@@ -124,9 +124,9 @@ const ContactPage = () => {
                   </div>
 
                   <div className="flex items-start gap-6 group">
-                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-red-700 transition-colors duration-300">
+                    {/* <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-red-700 transition-colors duration-300">
                       <MapPin size={20} className="text-white" />
-                    </div>
+                    </div> */}
                     <div>
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Visit Us</p>
                       <p className="leading-relaxed text-gray-200">
