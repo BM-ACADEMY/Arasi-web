@@ -6,7 +6,8 @@ import {
   ShoppingBag,
   Box,
   ImageIcon,
-  MessageSquare // Recommended for complaints
+  MessageSquare, // Recommended for complaints
+  Share2
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -39,6 +40,11 @@ export const adminSidebarItems = [
     name: "Banner",
     path: "/admin/banner",
     icon: ImageIcon,
+  },
+  {
+    name: "Social Media",
+    path: "/admin/social-media",
+    icon: Share2,
   },
   {
     name: "Complaints",

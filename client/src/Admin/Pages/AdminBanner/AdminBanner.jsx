@@ -117,7 +117,7 @@ const AdminBanner = () => {
   });
   const [preview, setPreview] = useState(null);
 
-  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || "http://localhost:5000";
+  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '');
 
   // --- Fetch Banners ---
   const fetchBanners = async () => {

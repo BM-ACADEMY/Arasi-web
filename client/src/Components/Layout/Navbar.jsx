@@ -174,15 +174,31 @@ const Navbar = () => {
         <div className="container mx-auto px-4 md:px-8 py-3 lg:py-4">
             <div className="flex items-center justify-between">
                 
-                {/* LEFT: Logo & Mobile Toggle */}
-                <div className="flex-1 flex items-center justify-start gap-4">
-                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="lg:hidden p-1 text-slate-800 hover:text-[#006baf]">
-                        <Menu size={24} />
-                    </button>
-                    <Link to="/" className="flex-shrink-0">
-                      <img src={logo} alt="Arasi Soap" className="h-8 md:h-12 w-auto object-contain" />
-                    </Link>
-                </div>
+               <div className="flex-1 flex items-center justify-start gap-4">
+    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="lg:hidden p-1 text-slate-800 hover:text-[#006baf]">
+        <Menu size={24} />
+    </button>
+    
+    <div className="flex items-start">
+        <Link to="/" className="flex-shrink-0">
+            <img src={logo} alt="Arasi Soap" className="h-8 md:h-12 w-auto object-contain" />
+        </Link>
+        
+        {/* TRADEMARK SECTION */}
+        <div className="relative group cursor-pointer ml-0.9">
+            <span className="text-[17px] md:text-[20px] font-bold text-slate-400 select-none">
+                ®
+            </span>
+            
+            {/* TOOLTIP */}
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-max bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg z-[70]">
+                Trade Mark No. 4296577
+                {/* Tooltip Arrow */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
                 {/* CENTER: Nav Links (Desktop Only) */}
                 <div className="hidden lg:flex flex-initial">

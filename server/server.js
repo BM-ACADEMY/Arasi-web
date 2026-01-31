@@ -70,6 +70,7 @@ app.use("/api/banner", require("./routes/bannerRoutes"));
 app.use("/api/reviews", require("./routes/reviewRoutes"));
 app.use("/api/complaints", require("./routes/complaintRoutes"));
 app.use("/api/contact", require("./routes/contactRoutes"));
+app.use("/api/social-media", require("./routes/socialMediaRoutes"));
 
 
 // 5. Error Handling
