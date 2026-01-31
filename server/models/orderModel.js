@@ -7,7 +7,6 @@ const orderSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    // Array of items from the Cart
     orderItems: [
       {
         product: {
@@ -19,13 +18,13 @@ const orderSchema = new mongoose.Schema(
         image: { type: String, required: true },
         price: { type: Number, required: true },
         quantity: { type: Number, required: true },
-        variant: { type: String } // "500g", "Large", etc.
+        variant: { type: String }
       },
     ],
     shippingAddress: {
       address: { type: String, required: true },
       city: { type: String, required: true },
-      state: { type: String, required: true },
+      state: { type: String, required: true }, // Crucial for shipping calc
       pincode: { type: String, required: true },
       phone: { type: String, required: true },
     },
@@ -34,6 +33,11 @@ const orderSchema = new mongoose.Schema(
       razorpayPaymentId: { type: String },
       razorpaySignature: { type: String },
     },
+    // --- NEW FIELDS ---
+    itemsPrice: { type: Number, required: true, default: 0 },
+    taxPrice: { type: Number, required: true, default: 0 },
+    shippingPrice: { type: Number, required: true, default: 0 },
+    // ------------------
     totalAmount: {
       type: Number,
       required: true,

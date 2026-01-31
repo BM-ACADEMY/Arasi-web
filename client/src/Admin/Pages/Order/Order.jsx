@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from "react";
-import api from "@/services/api";
+import api from "@/services/api"; // Your existing API service
+import { io } from "socket.io-client"; // <--- NEW IMPORT
 import {
   Package, Truck, CheckCircle, Clock, XCircle,
-  User, Calendar, X, CreditCard, MapPin, AlertTriangle,
-  Eye, ChevronRight, Search, Filter, ArrowUpRight,
-  MoreHorizontal, Phone, Mail, ChevronDown
+  User, X, CreditCard, MapPin, AlertTriangle,
+  ChevronRight, Search, Phone, Mail, ChevronDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -137,11 +137,11 @@ const OrderDrawer = ({ order, onClose, SERVER_URL }) => {
               {order.orderItems.map((item, idx) => (
                 <div key={idx} className="flex gap-4 p-3 bg-white border border-gray-100 rounded-xl hover:border-indigo-100 transition-colors shadow-sm">
                   <div className="h-16 w-16 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
-                     <img
-                       src={item.image ? `${SERVER_URL}/${item.image}` : "/placeholder.jpg"}
-                       alt={item.name}
-                       className="h-full w-full object-cover"
-                     />
+                      <img
+                        src={item.image ? `${SERVER_URL}/${item.image}` : "/placeholder.jpg"}
+                        alt={item.name}
+                        className="h-full w-full object-cover"
+                      />
                   </div>
                   <div className="flex-1 flex flex-col justify-center">
                     <p className="text-sm font-bold text-gray-900 line-clamp-1">{item.name}</p>
@@ -197,7 +197,7 @@ const AdminOrderPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const SERVER_URL = "http://localhost:5000";
+  const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
   // --- FETCH ORDERS ---
   const fetchOrders = async () => {
@@ -211,7 +211,34 @@ const AdminOrderPage = () => {
     }
   };
 
-  useEffect(() => { fetchOrders(); }, []);
+  // --- INITIAL LOAD & SOCKET SETUP ---
+  useEffect(() => {
+    // 1. Initial Fetch
+    fetchOrders();
+
+    // 2. Connect to Socket
+    const socket = io(SERVER_URL);
+
+    // 3. Listen for "newOrder" event from backend
+    socket.on("newOrder", (newOrderData) => {
+      // Play a notification sound (optional)
+      const audio = new Audio("/notification.mp3");
+      audio.play().catch(e => console.log("Audio play blocked"));
+
+      // Show Toast
+      toast.success(`New Order Received: ₹${newOrderData.amount}`);
+
+      // RE-FETCH DATA
+      // We re-fetch because the socket event only sends partial data (_id, name, amount),
+      // but your table needs the full populated object (address, items, etc.)
+      fetchOrders();
+    });
+
+    // 4. Cleanup on Unmount
+    return () => {
+      socket.disconnect();
+    };
+  }, [SERVER_URL]);
 
   // --- FILTER & SEARCH LOGIC ---
   const filteredOrders = useMemo(() => {
@@ -228,14 +255,13 @@ const AdminOrderPage = () => {
   const stats = useMemo(() => ({
     total: orders.length,
     pending: orders.filter(o => o.orderStatus === "Processing").length,
-    // 1. UPDATED: Revenue calculation logic to exclude Cancelled orders
     revenue: orders.reduce((acc, curr) => {
-      if (curr.orderStatus === "Cancelled") return acc; // Skip if cancelled
+      if (curr.orderStatus === "Cancelled") return acc;
       return acc + (curr.paymentInfo?.razorpayPaymentId ? curr.totalAmount : 0);
     }, 0)
   }), [orders]);
 
-  // --- UPDATE HANDLER (OPTIMISTIC UPDATE) ---
+  // --- UPDATE HANDLER ---
   const handleStatusUpdate = async (orderId, newStatus) => {
     const previousOrders = [...orders];
 
@@ -285,7 +311,6 @@ const AdminOrderPage = () => {
 
         {/* 2. Controls Bar */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 justify-between items-center">
-          {/* Status Tabs */}
           <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar">
             {["All", "Processing", "Shipped", "Delivered", "Cancelled"].map(status => (
               <button
@@ -302,7 +327,6 @@ const AdminOrderPage = () => {
             ))}
           </div>
 
-          {/* Search */}
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input
@@ -317,8 +341,6 @@ const AdminOrderPage = () => {
 
         {/* 3. Orders Table */}
         <div className="bg-transparent space-y-3">
-
-          {/* Desktop Table Header */}
           <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 shadow-sm">
             <div className="col-span-2">Order ID</div>
             <div className="col-span-3">Customer</div>
@@ -328,7 +350,6 @@ const AdminOrderPage = () => {
             <div className="col-span-2 text-right">Actions</div>
           </div>
 
-          {/* List Content */}
           <div className="space-y-3">
             {filteredOrders.length === 0 ? (
               <div className="p-10 text-center bg-white rounded-xl border border-gray-200">
@@ -370,8 +391,6 @@ const AdminOrderPage = () => {
                         ₹{order.totalAmount.toLocaleString()}
                       </div>
                       <div className="col-span-2 flex justify-end items-center gap-3">
-                        
-                        {/* 2. UPDATED: Removed Cancelled from options (unless already cancelled) */}
                         <div className="relative">
                           {updatingId === order._id ? (
                             <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -386,7 +405,6 @@ const AdminOrderPage = () => {
                                     <option value="Processing">Processing</option>
                                     <option value="Shipped">Shipped</option>
                                     <option value="Delivered">Delivered</option>
-                                    {/* Removed 'Cancelled' from options unless it IS Cancelled */}
                                     {order.orderStatus === "Cancelled" && <option value="Cancelled">Cancelled</option>}
                                 </select>
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" size={14} />
@@ -420,7 +438,6 @@ const AdminOrderPage = () => {
                                 <option value="Processing">Processing</option>
                                 <option value="Shipped">Shipped</option>
                                 <option value="Delivered">Delivered</option>
-                                {/* Removed 'Cancelled' from options unless it IS Cancelled */}
                                 {order.orderStatus === "Cancelled" && <option value="Cancelled">Cancelled</option>}
                             </select>
                             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" size={14} />
@@ -448,7 +465,6 @@ const AdminOrderPage = () => {
 
       </div>
 
-      {/* DRAWER */}
       <AnimatePresence>
         {selectedOrder && (
           <OrderDrawer

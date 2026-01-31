@@ -10,7 +10,11 @@ const {
   verifyEmail,
   getUserProfile,
   updateUserProfile,
-  updatePassword
+  updatePassword,
+  createAdmin,
+  getAllAdmins,
+  updateAdmin, // Import this
+  deleteAdmin  // Import this
 } = require("../controllers/authController");
 const { protect, authorize } = require("../middleware/authMiddleware");
 
@@ -24,8 +28,14 @@ router.post("/verify-email", verifyEmail);
 // Add this line
 router.put("/update-password", protect, updatePassword);
 // --- NEW PROFILE ROUTE ---
-router.get("/profile", protect, getUserProfile)
+router.get("/profile", protect, getUserProfile);
 router.put("/profile", protect, updateUserProfile);
+
+
+router.post("/create-admin", protect, authorize("admin"), createAdmin);
+router.get("/admins", protect, authorize("admin"), getAllAdmins);
+router.put("/admin/:id", protect, authorize("admin"), updateAdmin);   // NEW
+router.delete("/admin/:id", protect, authorize("admin"), deleteAdmin);
 
 
 // Example Protected Admin Route

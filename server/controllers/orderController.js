@@ -1,11 +1,10 @@
-// backend/controllers/orderController.js
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const Order = require("../models/orderModel");
 const Cart = require("../models/cartModel");
-const sendEmail = require("../utils/sendEmail"); //
-
 const Product = require("../models/productModel");
+const StoreSettings = require("../models/storeSettingsModel"); // <--- Imported StoreSettings
+const sendEmail = require("../utils/sendEmail");
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -13,24 +12,69 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// --- HELPER: Calculate Costs (Tax & Shipping) ---
+const calculateOrderCosts = async (cartTotal, state) => {
+  let settings = await StoreSettings.findOne();
+
+  // Default values if settings not found
+  if (!settings) {
+    settings = { gstRate: 0, shippingCharges: [], defaultShippingCharge: 0 };
+  }
+
+  const gstRate = settings.gstRate || 0;
+
+  // 1. Calculate Shipping based on State
+  let shippingCost = settings.defaultShippingCharge || 0;
+
+  if (settings.shippingCharges && settings.shippingCharges.length > 0 && state) {
+    // Case-insensitive comparison
+    const stateCharge = settings.shippingCharges.find(
+      s => s.state.toLowerCase().trim() === state.toLowerCase().trim()
+    );
+    if (stateCharge) {
+      shippingCost = stateCharge.charge;
+    }
+  }
+
+  // 2. Calculate Tax (GST)
+  const taxAmount = Math.round((cartTotal * gstRate) / 100);
+
+  // 3. Final Total
+  const totalAmount = cartTotal + taxAmount + shippingCost;
+
+  return {
+    itemsPrice: cartTotal,
+    taxPrice: taxAmount,
+    shippingPrice: shippingCost,
+    totalAmount: totalAmount,
+    gstRate: gstRate // Useful for email/display
+  };
+};
+
 // @desc    Create Razorpay Order ID
 // @route   POST /api/orders/create-order
 exports.createRazorpayOrder = async (req, res) => {
   try {
+    const { shippingState } = req.body; // <--- Expecting state from frontend
+
     const cart = await Cart.findOne({ user: req.user.id });
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({ success: false, message: "No items in cart" });
     }
 
-    const totalAmount = cart.totalAmount;
+    // Calculate dynamic totals (Tax, Shipping)
+    const costs = await calculateOrderCosts(cart.totalAmount, shippingState);
+
     const options = {
-      amount: totalAmount * 100,
+      amount: costs.totalAmount * 100, // Amount in paise
       currency: "INR",
       receipt: `receipt_${Date.now()}`,
     };
 
     const order = await razorpay.orders.create(options);
-    res.status(200).json({ success: true, order });
+
+    // Return order details AND the calculated breakdown to frontend
+    res.status(200).json({ success: true, order, costs });
   } catch (error) {
     console.error("Razorpay Error:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -62,7 +106,10 @@ exports.verifyPayment = async (req, res) => {
     // 2. Fetch Cart
     const cart = await Cart.findOne({ user: req.user.id }).populate("items.product");
 
-    // 3. Construct Order Items
+    // 3. Re-Calculate Costs (Security check & Data persistence)
+    const costs = await calculateOrderCosts(cart.totalAmount, shippingAddress.state);
+
+    // 4. Construct Order Items
     const orderItems = cart.items.map((item) => ({
       product: item.product._id,
       name: item.product.name,
@@ -72,7 +119,7 @@ exports.verifyPayment = async (req, res) => {
       variant: item.variant
     }));
 
-    // 4. Create Order in DB
+    // 5. Create Order in DB
     const order = await Order.create({
       user: req.user.id,
       orderItems,
@@ -82,59 +129,45 @@ exports.verifyPayment = async (req, res) => {
         razorpayPaymentId: razorpay_payment_id,
         razorpaySignature: razorpay_signature,
       },
-      totalAmount: cart.totalAmount,
+      // Save Breakdown
+      itemsPrice: costs.itemsPrice,
+      taxPrice: costs.taxPrice,
+      shippingPrice: costs.shippingPrice,
+      totalAmount: costs.totalAmount,
       orderStatus: "Processing"
     });
 
-    // 5. Clear Cart
+    // 6. Clear Cart
     cart.items = [];
     cart.totalAmount = 0;
     await cart.save();
 
     // ---------------------------------------------------------
-    // EMAIL NOTIFICATION LOGIC (HTML TABLE FORMAT)
+    // EMAIL NOTIFICATION LOGIC (Updated with Tax/Shipping)
     // ---------------------------------------------------------
     try {
-      // Helper to generate the HTML Table Row for each product
       const productRows = orderItems.map(item => `
         <tr style="border-bottom: 1px solid #eee;">
           <td style="padding: 12px; font-family: sans-serif; color: #333;">
-            <strong>${item.name}</strong>
-            <br/>
+            <strong>${item.name}</strong><br/>
             <span style="font-size: 12px; color: #777;">Variant: ${item.variant || "Standard"}</span>
           </td>
-          <td style="padding: 12px; font-family: sans-serif; color: #333; text-align: center;">
-            ${item.quantity}
-          </td>
-          <td style="padding: 12px; font-family: sans-serif; color: #333; text-align: right;">
-            ₹${item.price}
-          </td>
+          <td style="padding: 12px; font-family: sans-serif; color: #333; text-align: center;">${item.quantity}</td>
+          <td style="padding: 12px; font-family: sans-serif; color: #333; text-align: right;">₹${item.price}</td>
         </tr>
       `).join("");
 
-      // HTML Template
       const htmlTemplate = (recipientName, isUser = true) => `
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-          
-          <div style="background-color: #4f46e5; padding: 20px; text-align: center;">
-            <h2 style="color: #ffffff; margin: 0; font-size: 24px;">
-              ${isUser ? "Order Confirmed!" : "New Order Received"}
-            </h2>
-            <p style="color: #e0e7ff; margin: 5px 0 0 0; font-size: 14px;">
-              Order ID: #${order._id}
-            </p>
+          <div style="background-color: #000; padding: 20px; text-align: center;">
+            <h2 style="color: #ffffff; margin: 0; font-size: 24px;">${isUser ? "Order Confirmed!" : "New Order Received"}</h2>
+            <p style="color: #e0e7ff; margin: 5px 0 0 0; font-size: 14px;">Order ID: #${order._id}</p>
           </div>
-
           <div style="padding: 20px;">
-            <p style="font-size: 16px; color: #333;">
-              Hello ${recipientName},
-            </p>
+            <p style="font-size: 16px; color: #333;">Hello ${recipientName},</p>
             <p style="color: #555; line-height: 1.5;">
-              ${isUser 
-                ? "Thank you for shopping with us. We have received your order and it is being processed." 
-                : `You have received a new order from <strong>${req.user.name}</strong>.`}
+              ${isUser ? "Thank you for shopping with us. Your order details are below:" : `You have received a new order from <strong>${req.user.name}</strong>.`}
             </p>
-
             <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
               <thead>
                 <tr style="background-color: #f8fafc; text-align: left;">
@@ -143,19 +176,28 @@ exports.verifyPayment = async (req, res) => {
                   <th style="padding: 12px; border-bottom: 2px solid #e2e8f0; font-size: 14px; color: #64748b; text-align: right;">Price</th>
                 </tr>
               </thead>
-              <tbody>
-                ${productRows}
-              </tbody>
+              <tbody>${productRows}</tbody>
               <tfoot>
                 <tr>
-                  <td colspan="2" style="padding: 15px; text-align: right; font-weight: bold; color: #333;">Total Amount:</td>
-                  <td style="padding: 15px; text-align: right; font-weight: bold; color: #4f46e5; font-size: 18px;">₹${order.totalAmount}</td>
+                  <td colspan="2" style="padding: 8px 12px; text-align: right; color: #555;">Subtotal:</td>
+                  <td style="padding: 8px 12px; text-align: right; color: #333;">₹${costs.itemsPrice}</td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="padding: 8px 12px; text-align: right; color: #555;">Tax (${costs.gstRate}%):</td>
+                  <td style="padding: 8px 12px; text-align: right; color: #333;">+₹${costs.taxPrice}</td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="padding: 8px 12px; text-align: right; color: #555;">Shipping:</td>
+                  <td style="padding: 8px 12px; text-align: right; color: #333;">${costs.shippingPrice === 0 ? "Free" : "+₹" + costs.shippingPrice}</td>
+                </tr>
+                <tr style="border-top: 2px solid #000;">
+                  <td colspan="2" style="padding: 15px; text-align: right; font-weight: bold; color: #000;">Total Amount:</td>
+                  <td style="padding: 15px; text-align: right; font-weight: bold; color: #000; font-size: 18px;">₹${costs.totalAmount}</td>
                 </tr>
               </tfoot>
             </table>
-
             <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; margin-top: 25px;">
-              <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Shipping Address</h3>
+              <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #475569; text-transform: uppercase;">Shipping Address</h3>
               <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.6;">
                 <strong>${req.user.name}</strong><br/>
                 ${shippingAddress.address}<br/>
@@ -164,35 +206,26 @@ exports.verifyPayment = async (req, res) => {
               </p>
             </div>
           </div>
-
-          <div style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 12px; color: #94a3b8;">
-            <p style="margin: 0;">Need help? Contact our support.</p>
-            <p style="margin: 5px 0 0 0;">&copy; ${new Date().getFullYear()} Your Company Name. All rights reserved.</p>
-          </div>
         </div>
       `;
 
-      // B. Send Email to USER
+      // Send Emails
       await sendEmail({
         email: req.user.email,
         subject: `Order Confirmed: ${order._id}`,
-        message: `Your order ${order._id} of ₹${order.totalAmount} has been placed successfully.`, // Fallback text
-        html: htmlTemplate(req.user.name, true), // Pass HTML
+        message: `Order ${order._id} placed. Total: ₹${costs.totalAmount}`,
+        html: htmlTemplate(req.user.name, true),
       });
 
-      // C. Send Email to ADMIN
       await sendEmail({
         email: process.env.SMTP_USER,
-        subject: `New Order Received: ${order._id}`,
-        message: `New order ${order._id} received from ${req.user.name}.`, // Fallback text
-        html: htmlTemplate("Admin", false), // Pass HTML
+        subject: `New Order: ${order._id}`,
+        message: `New Order ${order._id} from ${req.user.name}`,
+        html: htmlTemplate("Admin", false),
       });
-
-      console.log("HTML Emails sent to User and Admin successfully.");
 
     } catch (emailError) {
       console.error("Email Sending Failed:", emailError.message);
-      // Logic continues even if email fails
     }
     // ---------------------------------------------------------
 
@@ -206,7 +239,6 @@ exports.verifyPayment = async (req, res) => {
         createdAt: new Date()
       });
     }
-    // ------------------------------
 
     res.status(201).json({ success: true, message: "Order placed successfully", order });
   } catch (error) {
@@ -215,7 +247,8 @@ exports.verifyPayment = async (req, res) => {
   }
 };
 
-// ... (Rest of your controller functions: getUserOrders, getAllOrders, etc. remain unchanged)
+// @desc    Get logged in user orders
+// @route   GET /api/orders/myorders
 exports.getUserOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
@@ -225,6 +258,8 @@ exports.getUserOrders = async (req, res) => {
   }
 };
 
+// @desc    Get all orders (Admin)
+// @route   GET /api/orders
 exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
@@ -236,6 +271,8 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
+// @desc    Update order status (Admin)
+// @route   PUT /api/orders/:id/status
 exports.updateOrderStatus = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -256,6 +293,8 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
+// @desc    Cancel Order (User)
+// @route   PUT /api/orders/:id/cancel
 exports.cancelOrder = async (req, res) => {
   try {
     const { reason } = req.body;
@@ -278,8 +317,6 @@ exports.cancelOrder = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
-
 
 // @desc    Get Admin Dashboard Statistics
 // @route   GET /api/orders/admin/stats
@@ -333,7 +370,7 @@ exports.getDashboardStats = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(5);
 
-    // --- NEW: 5. Sales Trend (Last 7 Days) for Charts ---
+    // 5. Sales Trend (Last 7 Days) for Charts
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -360,7 +397,7 @@ exports.getDashboardStats = async (req, res) => {
       topProducts: productSales,
       unsoldProducts,
       recentOrders,
-      salesTrend // <--- Sending this to frontend
+      salesTrend
     });
   } catch (error) {
     console.error("Dashboard Stats Error:", error);

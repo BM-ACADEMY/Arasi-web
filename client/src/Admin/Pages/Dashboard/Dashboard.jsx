@@ -38,7 +38,7 @@ const BASE_URL = import.meta.env.VITE_SERVER_URL ;
 
 const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
-  if (imagePath.startsWith("http")) return imagePath; 
+  if (imagePath.startsWith("http")) return imagePath;
   const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
   return `${BASE_URL}/${cleanPath}`;
 };
@@ -78,7 +78,7 @@ const Dashboard = () => {
     // C. Listen for 'newOrder' event
     socket.on("newOrder", (newOrderData) => {
       console.log("New Order Received:", newOrderData);
-      
+
       // 1. Play a notification sound (Optional)
       const audio = new Audio('/notification.mp3'); // Ensure you have a file or remove this line
       audio.play().catch(e => console.log("Audio play failed", e));
@@ -95,7 +95,7 @@ const Dashboard = () => {
       );
 
       // 3. Refresh Dashboard Data silently (real-time update)
-      fetchStats(true); 
+      fetchStats(true);
     });
 
     // D. Cleanup on Unmount
@@ -134,7 +134,7 @@ const Dashboard = () => {
 
   return (
     <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen font-sans text-slate-800">
-      
+
       {/* --- HEADER --- */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -160,7 +160,7 @@ const Dashboard = () => {
           value={`₹${stats.totalRevenue.toLocaleString()}`}
           icon={<TrendingUp className="w-6 h-6 text-emerald-600" />}
           bg="bg-emerald-50"
-          trend="+12.5%" 
+          trend="+12.5%"
           trendColor="text-emerald-600"
         />
         <StatCard
@@ -179,7 +179,7 @@ const Dashboard = () => {
           trend="+3.4%"
           trendColor="text-violet-600"
         />
-        
+
         {/* Cancelled Count */}
         <StatCard
           title="Cancelled Orders"
@@ -205,7 +205,7 @@ const Dashboard = () => {
 
       {/* --- 2. CHARTS SECTION --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Revenue Area Chart */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <div className="flex justify-between items-center mb-6">
@@ -230,31 +230,31 @@ const Dashboard = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="date" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#64748b', fontSize: 12, fontWeight: 500}} 
-                  dy={10} 
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{fill: '#64748b', fontSize: 12, fontWeight: 500}}
+                  dy={10}
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#64748b', fontSize: 12, fontWeight: 500}} 
-                  tickFormatter={(value) => `₹${value}`} 
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{fill: '#64748b', fontSize: 12, fontWeight: 500}}
+                  tickFormatter={(value) => `₹${value}`}
                 />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: "#1e293b", border: "none", borderRadius: "12px", color: "#fff", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
                   itemStyle={{ color: "#e2e8f0" }}
                   cursor={{ stroke: '#6366f1', strokeWidth: 2 }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#6366f1" 
-                  strokeWidth={3} 
-                  fillOpacity={1} 
-                  fill="url(#colorRevenue)" 
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#6366f1"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorRevenue)"
                   animationDuration={1500}
                 />
               </AreaChart>
@@ -272,15 +272,15 @@ const Dashboard = () => {
               <BarChart data={topProducts} layout="vertical" margin={{ left: 0, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                 <XAxis type="number" hide />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  width={100} 
-                  tick={{fontSize: 11, fill: '#64748b', fontWeight: 500}} 
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  width={100}
+                  tick={{fontSize: 11, fill: '#64748b', fontWeight: 500}}
                   interval={0}
                   tickFormatter={(val) => val.length > 12 ? `${val.substring(0, 12)}...` : val}
                 />
-                <Tooltip 
+                <Tooltip
                   cursor={{fill: '#f8fafc'}}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                 />
@@ -425,7 +425,7 @@ const StatusBadge = ({ status }) => {
     Delivered: "bg-emerald-50 text-emerald-700 border-emerald-100",
     Cancelled: "bg-rose-50 text-rose-700 border-rose-100",
   };
-  
+
   const iconMap = {
     Processing: Clock,
     Shipped: Truck,

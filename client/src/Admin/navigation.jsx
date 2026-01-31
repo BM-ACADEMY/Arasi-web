@@ -7,7 +7,9 @@ import {
   Box,
   ImageIcon,
   MessageSquare, // Recommended for complaints
-  Share2
+  Share2,
+  Settings,
+  Shield
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -37,6 +39,11 @@ export const adminSidebarItems = [
     icon: Box,
   },
   {
+    name: "Store Settings",
+    path: "/admin/settings",
+    icon: Settings,
+  },
+  {
     name: "Banner",
     path: "/admin/banner",
     icon: ImageIcon,
@@ -50,5 +57,10 @@ export const adminSidebarItems = [
     name: "Complaints",
     path: "/admin/complaints", // Path updated for consistency
     icon: MessageSquare,
+  },
+  {
+    name: "Admins",
+    path: "/admin/admins",
+    icon: Shield, // Using Shield icon for Admin Management
   },
 ];

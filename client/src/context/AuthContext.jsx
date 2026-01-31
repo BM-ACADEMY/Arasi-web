@@ -14,14 +14,29 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkUserLoggedIn = async () => {
       try {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) setUser(JSON.parse(storedUser));
+        // 1. Try to fetch the profile from the server (using the httpOnly cookie)
+        const { data } = await api.get("/auth/profile");
+
+        if (data.success && data.user) {
+          setUser(data.user);
+          // Sync localStorage just in case, but Server is the source of truth
+          localStorage.setItem("user", JSON.stringify(data.user));
+        } else {
+          // Response success is false
+          setUser(null);
+          localStorage.removeItem("user");
+        }
       } catch (error) {
+        // 2. If server call fails (e.g. 401 Unauthorized), clear user
+        // console.log("Not authenticated", error);
+        setUser(null);
         localStorage.removeItem("user");
       } finally {
+        // 3. Always finish loading
         setLoading(false);
       }
     };
+
     checkUserLoggedIn();
   }, []);
 
@@ -30,10 +45,8 @@ export const AuthProvider = ({ children }) => {
     setIsButtonLoading(true);
     try {
       await api.post("/auth/register", { name, email, password });
-
       toast.success("OTP sent to your email!");
       navigate("/verify-email", { state: { email } });
-
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Registration failed");
@@ -82,7 +95,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await api.get("/auth/logout");
-      toast.success("Logged out successfully"); // <--- Added Toast Here
+      toast.success("Logged out successfully");
     } catch (e) {
       console.error(e);
     }
@@ -90,7 +103,7 @@ export const AuthProvider = ({ children }) => {
     // Clear local state
     setUser(null);
     localStorage.removeItem("user");
-    navigate("/");
+    navigate("/login"); // Usually better to send to login on logout
   };
 
   return (
@@ -105,7 +118,7 @@ export const AuthProvider = ({ children }) => {
         logout
       }}
     >
-      {!loading && children}
+      {!loading ? children : <div className="flex justify-center items-center h-screen">Loading...</div>}
     </AuthContext.Provider>
   );
 };

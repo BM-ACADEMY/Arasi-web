@@ -15,6 +15,8 @@ import AdminBanner from "@/Admin/Pages/AdminBanner/AdminBanner";
 import Dashboard from "@/Admin/Pages/Dashboard/Dashboard";
 import AdminComplaints from "@/Admin/Pages/Complaint/AdminComplaints";
 import SocialMedia from "@/Admin/Pages/SocialMedia/SocialMedia";
+import StoreSettings from "@/Admin/Pages/StoreSettings/StoreSettings";
+import Admins from "@/Admin/Pages/Admins/Admins";
 
 const AdminRoutes = () => {
   return (
@@ -39,6 +41,8 @@ const AdminRoutes = () => {
         <Route path="banner" element={<AdminBanner />} />
         <Route path="complaints" element={<AdminComplaints />} />
         <Route path="social-media" element={<SocialMedia />} />
+        <Route path="settings" element={<StoreSettings />} />
+        <Route path="admins" element={<Admins />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="dashboard" replace />} />

@@ -20,7 +20,7 @@ const app = express();
 const server = http.createServer(app); // Create HTTP server manually
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL, 
+    origin: process.env.CLIENT_URL,
     methods: ["GET", "POST"],
     credentials: true
   },
@@ -32,7 +32,7 @@ app.set("io", io);
 io.on("connection", (socket) => {
   // Optional: Log connection for debugging
   // console.log("Socket connected:", socket.id);
-  
+
   socket.on("disconnect", () => {
     // console.log("Socket disconnected");
   });
@@ -40,7 +40,7 @@ io.on("connection", (socket) => {
 // -----------------------
 
 // 2. Middleware
-app.use(helmet({ crossOriginResourcePolicy: false })); 
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -71,6 +71,7 @@ app.use("/api/reviews", require("./routes/reviewRoutes"));
 app.use("/api/complaints", require("./routes/complaintRoutes"));
 app.use("/api/contact", require("./routes/contactRoutes"));
 app.use("/api/social-media", require("./routes/socialMediaRoutes"));
+app.use("/api/settings", require("./routes/storeSettingsRoutes"));
 
 
 // 5. Error Handling

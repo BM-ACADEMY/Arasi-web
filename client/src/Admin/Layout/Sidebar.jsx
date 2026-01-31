@@ -8,7 +8,7 @@ import ChangePasswordModal from "./ChangePasswordModal"; // Import the Modal
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
-  
+
   // State for Modal
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
@@ -31,9 +31,10 @@ const Sidebar = ({ isOpen, onClose }) => {
         {/* 1. BRAND LOGO */}
         <div className="flex h-16 items-center border-b border-gray-700/50 px-6">
           <div className="flex items-center gap-3">
+            <Link to="/">
             <span className="text-lg font-bold tracking-wide text-gray-100">
               Arasi Soaps
-            </span>
+            </span></Link>
           </div>
         </div>
 
@@ -109,9 +110,9 @@ const Sidebar = ({ isOpen, onClose }) => {
       </aside>
 
       {/* Render the Modal */}
-      <ChangePasswordModal 
-        isOpen={isPasswordModalOpen} 
-        onClose={() => setIsPasswordModalOpen(false)} 
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
       />
     </>
   );

@@ -63,7 +63,7 @@ const CartPage = () => {
   const total = subtotal + shipping;
 
   return (
-    <div className="min-h-screen pt-24 md:pt-32 lg:pt-40 pb-24 bg-[#F9F8F6]"> 
+    <div className="min-h-screen pt-24 md:pt-32 lg:pt-40 pb-24 bg-[#F9F8F6]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header Section */}
@@ -166,10 +166,10 @@ const CartPage = () => {
                   <span className="font-light">Subtotal</span>
                   <span className="text-[#2C2C2C]">₹{subtotal.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-sm text-[#87827D]">
+                {/* <div className="flex justify-between text-sm text-[#87827D]">
                   <span className="font-light">Shipping</span>
                   <span className="text-[#2C2C2C] font-serif">Free</span>
-                </div>
+                </div> */}
                 <div className="pt-6 border-t border-[#D1CDC7] flex justify-between items-baseline">
                   <span className="text-sm uppercase tracking-widest font-medium text-[#2C2C2C]">Total</span>
                   <span className="text-2xl md:text-3xl text-[#2C2C2C]">₹{total.toLocaleString()}</span>

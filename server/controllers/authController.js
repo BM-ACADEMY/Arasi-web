@@ -277,7 +277,7 @@ exports.getUserProfile = async (req, res) => {
   try {
     // 1. Get Basic User Info
     const user = await User.findById(req.user.id).select("-password -otp -otpExpires");
-    
+
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
@@ -304,12 +304,12 @@ exports.getUserProfile = async (req, res) => {
       }
     });
 
-    res.status(200).json({ 
-      success: true, 
-      user: { 
-        ...user.toObject(), 
-        addresses: uniqueAddresses 
-      } 
+    res.status(200).json({
+      success: true,
+      user: {
+        ...user.toObject(),
+        addresses: uniqueAddresses
+      }
     });
 
   } catch (error) {
@@ -331,7 +331,7 @@ exports.updateUserProfile = async (req, res) => {
 
     user.name = name || user.name;
     // Email is intentionally NOT updated here for security
-    
+
     await user.save();
 
     res.status(200).json({ success: true, message: "Profile updated successfully", user });
@@ -367,6 +367,113 @@ exports.updatePassword = async (req, res) => {
     // Optional: Send new token or just success message
     sendTokenResponse(user, 200, res, "Password updated successfully");
 
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+// @desc    Create a new Admin (Protected)
+// @route   POST /api/auth/create-admin
+exports.createAdmin = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // 1. Check if user exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ success: false, message: "User already exists" });
+    }
+
+    // 2. Hash Password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // 3. Create Admin User (Verified by default since created by another admin)
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: "admin",
+      isVerified: true,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "New Admin created successfully",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get all Admins
+// @route   GET /api/auth/admins
+exports.getAllAdmins = async (req, res) => {
+  try {
+    const admins = await User.find({ role: "admin" }).select("-password -otp -otpExpires");
+    res.status(200).json({ success: true, admins });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ... existing imports
+
+// @desc    Update Admin Details
+// @route   PUT /api/auth/admin/:id
+exports.updateAdmin = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Update basic fields
+    user.name = name || user.name;
+    user.email = email || user.email;
+
+    // Update password only if provided
+    if (password && password.trim() !== "") {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
+
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Admin updated successfully", user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete Admin
+// @route   DELETE /api/auth/admin/:id
+exports.deleteAdmin = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Optional: Prevent deleting self
+    if (user._id.toString() === req.user.id) {
+      return res.status(400).json({ success: false, message: "You cannot delete yourself" });
+    }
+
+    await user.deleteOne();
+
+    res.status(200).json({ success: true, message: "Admin removed successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

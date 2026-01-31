@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import api from "@/services/api";
 import {
   Package, Truck, CheckCircle, Clock, ChevronRight,
-  ShoppingBag, X, MapPin, AlertCircle, ArrowRight
+  ShoppingBag, X, MapPin, AlertCircle, ArrowRight, Receipt
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -28,14 +28,14 @@ const getStatusColor = (status) => {
 const getImageUrl = (imagePath) => {
   if (!imagePath) return "https://via.placeholder.com/80";
   if (imagePath.startsWith("http")) return imagePath;
-  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '');
+  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || "http://localhost:5000";
   return `${baseUrl}/${imagePath}`;
 };
 
-// --- ANIMATION VARIANTS (Bottom Sheet on Mobile, Modal on Desktop) ---
+// --- MODAL WRAPPER ---
 const modalVariants = {
   hidden: { opacity: 0, y: "100%" },
-  visible: { 
+  visible: {
     opacity: 1, y: 0,
     transition: { type: "spring", damping: 25, stiffness: 300 }
   },
@@ -48,11 +48,8 @@ const desktopModalVariants = {
   exit: { opacity: 0, scale: 0.95, y: 20 }
 };
 
-// Wrapper to handle responsive animation styles
 const ModalWrapper = ({ children, onClose }) => {
-  // Simple check for mobile (can be replaced with useMediaQuery hook for precision)
-  const isMobile = window.innerWidth < 768; 
-
+  const isMobile = window.innerWidth < 768;
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center sm:p-4">
       <motion.div
@@ -70,7 +67,7 @@ const ModalWrapper = ({ children, onClose }) => {
   );
 };
 
-// --- CANCELLATION MODAL ---
+// --- CANCEL MODAL ---
 const CancelOrderModal = ({ onClose, onConfirm, isCancelling }) => {
   const [selectedReason, setSelectedReason] = useState("");
   const [customReason, setCustomReason] = useState("");
@@ -107,46 +104,20 @@ const CancelOrderModal = ({ onClose, onConfirm, isCancelling }) => {
 
       <div className="p-6 overflow-y-auto">
         <p className="text-sm text-gray-500 mb-4">Please select a reason for cancellation:</p>
-
         <div className="space-y-3 mb-6">
           {reasons.map((reason) => (
-            <label
-              key={reason}
-              className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                selectedReason === reason
-                  ? "border-red-500 bg-red-50/50 text-red-900 shadow-sm"
-                  : "border-gray-100 hover:border-gray-200 bg-white"
-              }`}
-            >
-              <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                selectedReason === reason ? "border-red-500" : "border-gray-300"
-              }`}>
+            <label key={reason} className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${selectedReason === reason ? "border-red-500 bg-red-50/50 text-red-900 shadow-sm" : "border-gray-100 hover:border-gray-200 bg-white"}`}>
+              <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${selectedReason === reason ? "border-red-500" : "border-gray-300"}`}>
                 {selectedReason === reason && <div className="w-2 h-2 rounded-full bg-red-500" />}
               </div>
-              <input
-                type="radio" name="cancelReason" value={reason}
-                checked={selectedReason === reason}
-                onChange={(e) => setSelectedReason(e.target.value)}
-                className="hidden"
-              />
+              <input type="radio" name="cancelReason" value={reason} checked={selectedReason === reason} onChange={(e) => setSelectedReason(e.target.value)} className="hidden" />
               <span className="text-sm font-medium">{reason}</span>
             </label>
           ))}
-
           <AnimatePresence>
             {selectedReason === "Other" && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                <textarea
-                  value={customReason}
-                  onChange={(e) => setCustomReason(e.target.value)}
-                  placeholder="Tell us more..."
-                  className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none h-24 bg-gray-50"
-                />
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                <textarea value={customReason} onChange={(e) => setCustomReason(e.target.value)} placeholder="Tell us more..." className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none h-24 bg-gray-50" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -154,25 +125,14 @@ const CancelOrderModal = ({ onClose, onConfirm, isCancelling }) => {
       </div>
 
       <div className="p-6 border-t bg-white mt-auto flex gap-3">
-        <button
-          onClick={onClose}
-          className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          Back
-        </button>
-        <button
-          onClick={handleSubmit}
-          disabled={isCancelling}
-          className="flex-1 py-3 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-70 shadow-lg shadow-red-100"
-        >
-          {isCancelling ? "Processing..." : "Confirm Cancel"}
-        </button>
+        <button onClick={onClose} className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">Back</button>
+        <button onClick={handleSubmit} disabled={isCancelling} className="flex-1 py-3 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-70 shadow-lg shadow-red-100">{isCancelling ? "Processing..." : "Confirm Cancel"}</button>
       </div>
     </ModalWrapper>
   );
 };
 
-// --- TRACKING MODAL ---
+// --- ORDER DETAILS / TRACKING MODAL ---
 const TrackOrderModal = ({ order, onClose }) => {
   const steps = [
     { label: "Order Placed", icon: Package, date: order.createdAt },
@@ -189,10 +149,10 @@ const TrackOrderModal = ({ order, onClose }) => {
   return (
     <ModalWrapper onClose={onClose}>
       <div className="sticky top-0 bg-white/90 backdrop-blur-md px-6 py-4 border-b flex items-center justify-between z-10">
-        <h3 className="font-medium text-gray-900 text-lg">Track Order</h3>
+        <h3 className="font-medium text-gray-900 text-lg">Order Details</h3>
         <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X size={20}/></button>
       </div>
-      
+
       <div className="p-6 overflow-y-auto">
         <div className="flex justify-between items-start mb-8">
           <div>
@@ -203,14 +163,15 @@ const TrackOrderModal = ({ order, onClose }) => {
           </div>
         </div>
 
+        {/* Status Timeline */}
         {order.orderStatus === "Cancelled" ? (
-           <div className="bg-red-50 rounded-xl p-6 text-center border border-red-100">
+           <div className="bg-red-50 rounded-xl p-6 text-center border border-red-100 mb-6">
              <X className="mx-auto text-red-400 mb-2" size={32} />
              <p className="font-medium text-red-900">Order Cancelled</p>
              <p className="text-xs text-red-600 mt-1">Reason: {order.cancellationReason}</p>
            </div>
         ) : (
-          <div className="relative pl-2 flex flex-col gap-6">
+          <div className="relative pl-2 flex flex-col gap-6 mb-8">
             <div className="absolute left-[23px] top-6 bottom-6 w-0.5 bg-gray-100 -z-0" />
             {steps.map((step, index) => {
               const isCompleted = index <= activeStep;
@@ -230,15 +191,47 @@ const TrackOrderModal = ({ order, onClose }) => {
           </div>
         )}
 
-        <div className="mt-8 pt-6 border-t flex gap-4">
+        {/* --- COST BREAKDOWN SECTION --- */}
+        <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 mb-6">
+           <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
+             <Receipt size={14} /> Payment Breakdown
+           </h4>
+           <div className="space-y-3 text-sm">
+              <div className="flex justify-between text-gray-600">
+                 <span>Item Total</span>
+                 <span className="font-medium text-gray-900">₹{(order.itemsPrice || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                 <span>GST (Tax)</span>
+                 <span className="font-medium text-gray-900">+ ₹{(order.taxPrice || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                 <span>Delivery Charges</span>
+                 <span className="font-medium text-gray-900">
+                   {order.shippingPrice === 0 ? <span className="text-green-600">Free</span> : `+ ₹${order.shippingPrice}`}
+                 </span>
+              </div>
+
+              <div className="h-px bg-gray-200 my-2" />
+
+              <div className="flex justify-between items-center pt-1">
+                 <span className="font-bold text-gray-900 text-base">Total Paid</span>
+                 <span className="font-bold text-black text-lg">₹{order.totalAmount.toLocaleString()}</span>
+              </div>
+           </div>
+        </div>
+
+        {/* Shipping Address */}
+        <div className="border-t pt-6 flex gap-4">
            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
              <MapPin size={16} className="text-gray-500" />
            </div>
            <div>
-             <p className="text-xs font-medium text-gray-900">Shipping Address</p>
+             <p className="text-xs font-medium text-gray-900">Delivery Address</p>
              <p className="text-xs text-gray-500 leading-relaxed mt-1">
-               {order.shippingAddress?.address}, {order.shippingAddress?.city}, {order.shippingAddress?.pincode}
+               {order.shippingAddress?.address}, {order.shippingAddress?.city}, {order.shippingAddress?.state} - {order.shippingAddress?.pincode}
              </p>
+             <p className="text-xs text-gray-500 mt-1">Phone: {order.shippingAddress?.phone}</p>
            </div>
         </div>
       </div>
@@ -250,7 +243,7 @@ const TrackOrderModal = ({ order, onClose }) => {
 const OrderPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Modal States
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [cancelOrderData, setCancelOrderData] = useState(null);
@@ -295,7 +288,7 @@ const OrderPage = () => {
       <div className="max-w-4xl mx-auto">
         <header className="mb-8 md:mb-10">
           <h1 className="text-2xl md:text-3xl font-medium text-gray-900 tracking-tight">Your Orders</h1>
-          <p className="text-sm text-gray-500 mt-2">Manage your purchases and returns</p>
+          <p className="text-sm text-gray-500 mt-2">Track shipments, view GST details, and manage returns.</p>
         </header>
 
         {orders.length === 0 ? (
@@ -308,7 +301,7 @@ const OrderPage = () => {
           <div className="space-y-6">
             {orders.map((order) => (
               <div key={order._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-md transition-shadow">
-                
+
                 {/* Header */}
                 <div className="px-5 py-4 bg-gray-50/50 flex items-center justify-between border-b border-gray-100">
                   <div className="flex gap-4 items-center">
@@ -364,7 +357,7 @@ const OrderPage = () => {
                       onClick={() => setSelectedOrder(order)}
                       className="flex-1 sm:flex-none bg-black text-white text-xs font-medium px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-lg shadow-gray-200"
                     >
-                      Track Order <ArrowRight size={14} />
+                      View Details & Invoice <ArrowRight size={14} />
                     </button>
                   </div>
                 </div>
@@ -379,8 +372,8 @@ const OrderPage = () => {
             <TrackOrderModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
           )}
           {cancelOrderData && (
-            <CancelOrderModal 
-              onClose={() => setCancelOrderData(null)} 
+            <CancelOrderModal
+              onClose={() => setCancelOrderData(null)}
               onConfirm={processCancellation}
               isCancelling={isCancelling}
             />
