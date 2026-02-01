@@ -93,7 +93,7 @@ exports.addMessage = async (req, res) => {
     }
 
     let sender = req.user.role === "admin" ? "Admin" : "User";
-    
+
     // Safety check for user
     if (sender === "User" && complaint.user.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: "Not authorized" });
@@ -120,7 +120,7 @@ exports.addMessage = async (req, res) => {
     if (io) {
       io.emit("newMessage", {
         complaintId: complaint._id,
-        message: complaint.messages[complaint.messages.length - 1] 
+        message: complaint.messages[complaint.messages.length - 1]
       });
     }
 
@@ -134,7 +134,7 @@ exports.addMessage = async (req, res) => {
 // @route   PUT /api/complaints/admin/:id
 exports.updateComplaintStatus = async (req, res) => {
   try {
-    const { status } = req.body; 
+    const { status } = req.body;
     const complaint = await Complaint.findById(req.params.id);
 
     if (!complaint) {
@@ -150,6 +150,30 @@ exports.updateComplaintStatus = async (req, res) => {
   }
 };
 
+// @desc    Delete a complaint (Admin only)
+// @route   DELETE /api/complaints/admin/:id
+exports.deleteComplaint = async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: "Complaint not found" });
+    }
+
+    await complaint.deleteOne();
+
+    // SOCKET EMIT: Real-time delete
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("complaintDeleted", complaint._id); // Send ID of deleted ticket
+    }
+
+    res.status(200).json({ success: true, message: "Complaint deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Mark messages as Seen
 // @route   PUT /api/complaints/:id/seen
 exports.markMessagesAsSeen = async (req, res) => {
@@ -159,7 +183,6 @@ exports.markMessagesAsSeen = async (req, res) => {
 
     // Identify who is viewing
     const viewerRole = req.user.role === "admin" ? "Admin" : "User";
-    // We want to mark messages sent by the *opposite* party as seen
     const senderToMark = viewerRole === "Admin" ? "User" : "Admin";
 
     let updated = false;
@@ -174,8 +197,7 @@ exports.markMessagesAsSeen = async (req, res) => {
 
     if (updated) {
       await complaint.save();
-      
-      // Notify the sender that their messages have been read
+
       const io = req.app.get("io");
       if (io) {
         io.emit("messagesRead", {

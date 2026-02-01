@@ -1,13 +1,14 @@
 const express = require("express");
 const { protect, authorize } = require("../middleware/authMiddleware");
-const { 
-  createComplaint, 
-  getMyComplaints, 
+const {
+  createComplaint,
+  getMyComplaints,
   getComplaintById,
   addMessage,
   markMessagesAsSeen,
-  getAllComplaints, 
-  updateComplaintStatus 
+  getAllComplaints,
+  updateComplaintStatus,
+  deleteComplaint // Import the new controller
 } = require("../controllers/complaintController");
 
 const router = express.Router();
@@ -24,5 +25,6 @@ router.put("/:id/seen", protect, markMessagesAsSeen);
 // Admin Routes
 router.get("/admin/all", protect, authorize("admin"), getAllComplaints);
 router.put("/admin/:id", protect, authorize("admin"), updateComplaintStatus);
+router.delete("/admin/:id", protect, authorize("admin"), deleteComplaint); // New Delete Route
 
 module.exports = router;

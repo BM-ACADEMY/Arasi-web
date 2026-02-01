@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '@/services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 // ensure you have installed lucide-react or remove the Icon if not needed
-import { ArrowRight } from 'lucide-react'; 
+import { ArrowRight } from 'lucide-react';
 
 const Banner = () => {
   const [banners, setBanners] = useState([]);
@@ -50,7 +50,7 @@ const Banner = () => {
   const textVariants = {
     hidden: { opacity: 0, y: 30 },
     visible: (delay) => ({
-      opacity: 1, 
+      opacity: 1,
       y: 0,
       transition: { delay, duration: 0.8, ease: "easeOut" }
     })
@@ -59,7 +59,7 @@ const Banner = () => {
   return (
     // MAIN CONTAINER
     <section className="relative w-full h-[75vh] md:h-[80vh] min-h-[550px] overflow-hidden bg-black mt-13 md:mt-15 lg:mt-32">
-      
+
       <AnimatePresence mode='wait'>
         <motion.div
           key={currentSlide}
@@ -69,7 +69,7 @@ const Banner = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: 1 }}
         >
-          
+
           {/* --- LAYER 1: BACKGROUND IMAGE --- */}
           {imageUrl && (
             <img
@@ -84,38 +84,38 @@ const Banner = () => {
 
           {/* --- LAYER 3: CONTENT --- */}
           <div className="absolute inset-0 z-20 flex flex-col justify-center px-6 pt-10 md:px-16 md:pt-0 lg:px-24">
-            
+
             <div className="max-w-2xl text-white mt-10 md:mt-0">
-              
+
               {/* 1. Tagline - Elegant, spaced out, not bold */}
-              <motion.p 
+              <motion.p
                 custom={0.2}
                 variants={textVariants}
                 initial="hidden"
                 animate="visible"
-                className="text-xs md:text-sm font-normal tracking-[0.3em] text-gray-300 uppercase mb-4"
+                className="text-xs md:text-sm font-serif tracking-[0.3em] text-gray-300 uppercase mb-4"
               >
                 {currentBanner.tagline || "New Collection"}
               </motion.p>
-              
+
               {/* 2. Heading - Light font weight (Thin/Light) for luxury feel */}
-              <motion.h1 
+              <motion.h1
                 custom={0.3}
                 variants={textVariants}
                 initial="hidden"
                 animate="visible"
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[1.1] mb-6 drop-shadow-xl"
+                className="text-4xl sm:text-5xl md:text-6xl font-serif lg:text-7xl font-light tracking-tight leading-[1.1] mb-6 drop-shadow-xl"
               >
                 {currentBanner.heading}
               </motion.h1>
 
               {/* 3. Paragraph - Light weight, relaxed leading */}
-              <motion.p 
+              <motion.p
                 custom={0.4}
                 variants={textVariants}
                 initial="hidden"
                 animate="visible"
-                className="text-gray-200 text-sm sm:text-base md:text-lg font-light leading-relaxed max-w-md md:max-w-lg mb-8 drop-shadow-md line-clamp-3 md:line-clamp-none"
+                className="text-gray-200 text-sm sm:text-base md:text-lg font-serif leading-relaxed max-w-md md:max-w-lg mb-8 drop-shadow-md line-clamp-3 md:line-clamp-none"
               >
                 {currentBanner.description}
               </motion.p>
@@ -138,7 +138,7 @@ const Banner = () => {
 
                   {/* Arrow Icon Slide Animation */}
                   <ArrowRight className="w-4 h-4 relative z-10 transform -translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300" />
-                  
+
                   {/* Subtle Background slide effect (Optional) */}
                   <div className="absolute inset-0 bg-gray-200 transform scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-300 ease-out z-0" />
                 </Link>
