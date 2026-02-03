@@ -3,10 +3,28 @@ import api from '@/services/api';
 import {
   Plus, Edit2, Trash2, X, Save, Loader2,
   Image as ImageIcon, UploadCloud, LayoutTemplate,
-  MoreHorizontal, Type, FileText
+  Type, FileText
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// --- HELPER: Construct Safe URL ---
+// This ensures we get the correct base URL regardless of whether VITE_API_URL has /api or not
+const getSafeImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath; // Already a full URL (e.g. Cloudinary)
+  if (imagePath instanceof File || imagePath instanceof Blob) return URL.createObjectURL(imagePath);
+
+  // 1. Get API URL
+  const apiVar = import.meta.env.VITE_API_URL || "";
+  // 2. Remove trailing '/api' and slashes
+  const baseUrl = apiVar.replace(/\/api\/?$/, "").replace(/\/$/, "");
+  // 3. Clean path
+  const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+
+  return `${baseUrl}/${cleanPath}`;
+};
+
 
 // --- COMPONENT: IMAGE UPLOADER ---
 const ImageUploader = ({ preview, onImageChange }) => {
@@ -55,54 +73,67 @@ const ImageUploader = ({ preview, onImageChange }) => {
 };
 
 // --- COMPONENT: BANNER CARD ---
-const BannerCard = ({ banner, onEdit, onDelete, baseUrl }) => (
-  <motion.div
-    layout
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    className="group relative bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all"
-  >
-    {/* Image Area */}
-    <div className="relative aspect-[21/9] bg-gray-100 overflow-hidden">
-      <img
-        src={`${baseUrl}/${banner.image}`}
-        alt={banner.heading}
-        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-      />
-      {/* Overlay Gradient for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+const BannerCard = ({ banner, onEdit, onDelete }) => {
+  // Use helper to get correct image URL
+  const imageUrl = getSafeImageUrl(banner.image);
 
-      {/* Absolute Actions */}
-      <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={() => onEdit(banner)}
-          className="p-2 bg-white/90 hover:bg-white text-gray-700 rounded-full shadow-sm backdrop-blur-sm transition-all hover:text-indigo-600"
-        >
-          <Edit2 size={16} />
-        </button>
-        <button
-          onClick={() => onDelete(banner._id)}
-          className="p-2 bg-white/90 hover:bg-white text-gray-700 rounded-full shadow-sm backdrop-blur-sm transition-all hover:text-red-600"
-        >
-          <Trash2 size={16} />
-        </button>
-      </div>
-    </div>
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="group relative bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all"
+    >
+      {/* Image Area */}
+      <div className="relative aspect-[21/9] bg-gray-100 overflow-hidden">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={banner.heading}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            onError={(e) => e.target.style.display = 'none'} // Hide broken images
+          />
+        ) : (
+           <div className="w-full h-full flex items-center justify-center text-gray-400">
+             <ImageIcon size={32} />
+           </div>
+        )}
 
-    {/* Content Area */}
-    <div className="p-5">
-      <div className="mb-2">
-        <span className="inline-block px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 text-xs font-bold tracking-wide uppercase">
-          {banner.tagline || "No Tagline"}
-        </span>
+        {/* Overlay Gradient for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+
+        {/* Absolute Actions */}
+        <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={() => onEdit(banner)}
+            className="p-2 bg-white/90 hover:bg-white text-gray-700 rounded-full shadow-sm backdrop-blur-sm transition-all hover:text-indigo-600"
+          >
+            <Edit2 size={16} />
+          </button>
+          <button
+            onClick={() => onDelete(banner._id)}
+            className="p-2 bg-white/90 hover:bg-white text-gray-700 rounded-full shadow-sm backdrop-blur-sm transition-all hover:text-red-600"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
-      <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{banner.heading}</h3>
-      <p className="text-sm text-gray-500 mt-1 line-clamp-2 leading-relaxed">
-        {banner.description}
-      </p>
-    </div>
-  </motion.div>
-);
+
+      {/* Content Area */}
+      <div className="p-5">
+        <div className="mb-2">
+          <span className="inline-block px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 text-xs font-bold tracking-wide uppercase">
+            {banner.tagline || "No Tagline"}
+          </span>
+        </div>
+        <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{banner.heading}</h3>
+        <p className="text-sm text-gray-500 mt-1 line-clamp-2 leading-relaxed">
+          {banner.description}
+        </p>
+      </div>
+    </motion.div>
+  );
+};
 
 // --- MAIN PAGE ---
 const AdminBanner = () => {
@@ -116,8 +147,6 @@ const AdminBanner = () => {
     tagline: '', heading: '', description: '', image: null
   });
   const [preview, setPreview] = useState(null);
-
-  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '');
 
   // --- Fetch Banners ---
   const fetchBanners = async () => {
@@ -143,7 +172,8 @@ const AdminBanner = () => {
         description: banner.description,
         image: null
       });
-      setPreview(`${baseUrl}/${banner.image}`);
+      // Use helper for preview
+      setPreview(getSafeImageUrl(banner.image));
     } else {
       setEditMode(false);
       setCurrentId(null);
@@ -161,6 +191,7 @@ const AdminBanner = () => {
     const file = e.target.files[0];
     if (file) {
       setFormData({ ...formData, image: file });
+      // Create local preview for new file
       setPreview(URL.createObjectURL(file));
     }
   };
@@ -189,6 +220,7 @@ const AdminBanner = () => {
         setIsDrawerOpen(false);
       }
     } catch (error) {
+      console.error(error);
       toast.error("Operation failed");
     } finally {
       setLoading(false);
@@ -244,7 +276,6 @@ const AdminBanner = () => {
                 banner={banner}
                 onEdit={handleOpenDrawer}
                 onDelete={handleDelete}
-                baseUrl={baseUrl}
               />
             ))}
           </div>
