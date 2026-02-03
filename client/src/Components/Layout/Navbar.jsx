@@ -356,7 +356,6 @@
 
 // export default Navbar;
 
-
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -383,7 +382,7 @@ import { useCart } from "@/context/CartContext";
 import ComplaintDrawer from "@/Components/Layout/Complaint/ComplaintDrawer";
 import api from "@/services/api";
 import { io } from "socket.io-client";
-import toast, { Toaster } from 'react-hot-toast'; // Import Toaster
+// REMOVED: import toast, { Toaster } from 'react-hot-toast';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -409,9 +408,9 @@ const Navbar = () => {
   // Helper for System Notifications
   const showSystemNotification = (title, body) => {
     if (Notification.permission === "granted") {
-      new Notification(title, { 
-        body, 
-        icon: logo // Ensure this path is correct
+      new Notification(title, {
+        body,
+        icon: logo
       });
     }
   };
@@ -446,19 +445,13 @@ const Navbar = () => {
 
       // 2. Setup Real-time Socket
       socketRef.current = io(import.meta.env.VITE_SERVER_URL);
-      
-      socketRef.current.on("newMessage", ({ message, complaintId }) => {
+
+      socketRef.current.on("newMessage", ({ message }) => {
         // Only notify if the sender is Admin (Support)
         if (message.sender === "Admin") {
           setHasUnreadSupport(true);
-          
           // Trigger System Notification (Outside Browser)
           showSystemNotification("New Message from arasi soap", message.message);
-          
-          // Trigger In-App Toast
-          // toast('New message from Support!', {
-          //   duration: 4000,
-          // });
         }
       });
 
@@ -494,7 +487,8 @@ const Navbar = () => {
 
   return (
     <>
-      <Toaster position="top-center" /> {/* Add Toaster here */}
+      {/* REMOVED: <Toaster /> - It is already in App.jsx */}
+
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 font-sans ${
         isScrolled ? "bg-white/95 backdrop-blur-md shadow-md" : "bg-white border-b border-gray-100 shadow-sm"
       }`}>
