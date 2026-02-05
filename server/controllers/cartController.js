@@ -5,9 +5,10 @@ const Product = require("../models/productModel");
 // @route   GET /api/cart
 exports.getCart = async (req, res) => {
   try {
+    // FIX: Added "variants" to populate so frontend can look up labels by ID
     const cart = await Cart.findOne({ user: req.user.id }).populate(
       "items.product",
-      "name images slug category brand"
+      "name images slug category brand variants" 
     );
 
     if (!cart) {
@@ -27,31 +28,42 @@ exports.addToCart = async (req, res) => {
     const { productId, quantity, variant } = req.body; 
     const qty = Number(quantity);
 
-    // 1. Fetch Product to get current price
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
 
-    // Determine Price: If a variant matches the requested variant string, use that price
-    let price = product.price;
-    if (product.variants && product.variants.length > 0) {
-      const matchedVariant = product.variants.find(v => (v.label || v.unit) === variant);
-      if (matchedVariant && matchedVariant.price) {
-        price = matchedVariant.price;
+    let selectedVariant = null;
+    let price = product.price || 0;
+
+    // 1. Resolve Variant (Handle both ID or Label inputs)
+    if (product.variants?.length > 0) {
+      // Try to find by _id first (preferred), then by label/unit
+      selectedVariant = product.variants.find(v => 
+        String(v._id) === String(variant) || 
+        v.label === variant || 
+        v.unit === variant
+      );
+
+      if (selectedVariant) {
+        price = selectedVariant.price || price;
       } else {
-        // Fallback to first variant price if specific variant not found/has no price
-        price = product.variants[0].price;
+        // Fallback to first variant if valid one not found
+        selectedVariant = product.variants[0];
+        price = selectedVariant.price || price;
       }
     }
 
-    // 2. Find Cart for User
     let cart = await Cart.findOne({ user: req.user.id });
+
+    // Determine the Variant ID to store (or null)
+    const variantIdToStore = selectedVariant ? selectedVariant._id.toString() : null;
 
     if (cart) {
       // Check if product AND variant already exist
-      const itemIndex = cart.items.findIndex((item) => 
-        item.product.toString() === productId && item.variant === variant
+      const itemIndex = cart.items.findIndex(item => 
+        item.product.toString() === productId &&
+        String(item.variant) === String(variantIdToStore || variant)
       );
 
       if (itemIndex > -1) {
@@ -62,30 +74,38 @@ exports.addToCart = async (req, res) => {
         } else {
           cart.items[itemIndex].quantity = newQuantity;
         }
-      } else {
-        // New item: Push with variant info
-        if (qty > 0) {
-          cart.items.push({ product: productId, quantity: qty, price, variant });
-        }
-      }
-    } else {
-      // Create new cart
-      if (qty > 0) {
-        cart = await Cart.create({
-          user: req.user.id,
-          items: [{ product: productId, quantity: qty, price, variant }],
+      } else if (qty > 0) {
+        // Add new item
+        cart.items.push({
+          product: productId,
+          quantity: qty,
+          price,
+          variant: variantIdToStore // Store the ID
         });
-      } else {
-        return res.status(400).json({ success: false, message: "Invalid quantity" });
       }
+    } else if (qty > 0) {
+      // Create new cart
+      cart = await Cart.create({
+        user: req.user.id,
+        items: [{
+          product: productId,
+          quantity: qty,
+          price,
+          variant: variantIdToStore
+        }],
+      });
     }
 
-    // 3. Recalculate Total & Save
     if (cart) {
       cart.totalAmount = cart.items.reduce((acc, item) => acc + item.quantity * item.price, 0);
       await cart.save();
-      
-      const populatedCart = await Cart.findById(cart._id).populate("items.product", "name images slug");
+
+      // FIX: Ensure "variants" is populated here too
+      const populatedCart = await Cart.findById(cart._id).populate(
+        "items.product", 
+        "name images slug variants"
+      );
+
       res.status(200).json({ success: true, message: "Cart updated", data: populatedCart });
     } else {
       res.status(200).json({ success: true, items: [], totalAmount: 0 });
@@ -111,7 +131,12 @@ exports.removeFromCart = async (req, res) => {
 
     await cart.save();
 
-    const populatedCart = await Cart.findById(cart._id).populate("items.product", "name images slug");
+    // FIX: Added "variants" to populate
+    const populatedCart = await Cart.findById(cart._id).populate(
+      "items.product", 
+      "name images slug variants"
+    );
+    
     res.status(200).json({ success: true, data: populatedCart });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

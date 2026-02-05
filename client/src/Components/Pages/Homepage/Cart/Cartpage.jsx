@@ -12,10 +12,22 @@ import {
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 
+// ── Updated getImageUrl Logic (from Banner.jsx) ──
 const getImageUrl = (imagePath) => {
   if (!imagePath) return "https://via.placeholder.com/150";
   if (imagePath.startsWith("http")) return imagePath;
-  return `${import.meta.env.VITE_API_URL.replace('/api', '')}/${imagePath}`;
+
+  // 1. Get the API URL from environment, or default to empty
+  const apiVar = import.meta.env.VITE_API_URL || "";
+
+  // 2. Remove "/api" from the end if present (and any trailing slashes)
+  const baseUrl = apiVar.replace(/\/api\/?$/, "").replace(/\/$/, "");
+
+  // 3. Ensure imagePath doesn't start with a slash to avoid double slashes
+  const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+
+  // 4. Combine
+  return `${baseUrl}/${cleanPath}`;
 };
 
 const CartPage = () => {
@@ -83,7 +95,38 @@ const CartPage = () => {
             <div className="border-t border-[#E8E4E1]">
               <AnimatePresence mode="popLayout">
                 {cart.items.map((item) => {
-                  if (!item.product) return null;
+                  if (!item?.product) return null;
+
+                  // ── Improved Variant Display Logic ──
+                  let sizeDisplay = "Standard";
+
+                  if (item.variant) {
+                    // Case 1: variant is ObjectId → look up in populated variants array
+                    if (typeof item.variant === 'string' && item.variant.length > 10) {
+                      const matchedVariant = item.product.variants?.find(
+                        v => v._id?.toString() === item.variant
+                      );
+
+                      if (matchedVariant) {
+                        // Priority: label > label + unit > weight + unit
+                        if (matchedVariant.label) {
+                          sizeDisplay = matchedVariant.label;
+                          if (matchedVariant.unit) sizeDisplay += ` ${matchedVariant.unit}`;
+                        } else if (matchedVariant.weight && matchedVariant.weightUnit) {
+                          sizeDisplay = `${matchedVariant.weight}${matchedVariant.weightUnit}`;
+                        } else if (matchedVariant.unit) {
+                          sizeDisplay = matchedVariant.unit;
+                        } else {
+                          sizeDisplay = "Custom Variant";
+                        }
+                      }
+                    }
+                    // Case 2: variant is already a readable string (old data or label)
+                    else {
+                      sizeDisplay = item.variant;
+                    }
+                  }
+
                   return (
                     <motion.div
                       key={item._id}
@@ -97,7 +140,7 @@ const CartPage = () => {
                       <div className="relative w-full sm:w-32 h-48 sm:h-40 bg-[#F1EFED] overflow-hidden flex-shrink-0 shadow-sm">
                         <img
                           src={getImageUrl(item.product.images?.[0])}
-                          alt={item.product.name}
+                          alt={item.product.name || "Product"}
                           className="w-full h-full object-cover mix-blend-multiply opacity-90 transition-transform duration-1000 group-hover:scale-110"
                         />
                       </div>
@@ -106,30 +149,38 @@ const CartPage = () => {
                         <div className="flex justify-between items-start gap-4">
                           <div className="space-y-1">
                             <p className="text-[10px] uppercase tracking-[0.2em] text-[#948F89]">
-                              {typeof item.product.category === 'object' ? item.product.category.name : "Artisanal"}
+                              {item.product.category?.name || item.product.category || "ARTISANAL"}
                             </p>
+
                             <h3 className="text-lg md:text-xl font-medium text-[#2C2C2C] leading-tight hover:text-[#948F89] transition-colors">
-                              <Link to={`/product/${item.product.slug}`}>{item.product.name}</Link>
+                              <Link to={`/product/${item.product.slug}`}>
+                                {item.product.name || "Product"}
+                              </Link>
                             </h3>
-                            {item.variant && (
-                              <p className="text-[11px] text-[#87827D] font-light uppercase tracking-widest pt-1">
-                                Size: {item.variant}
-                              </p>
-                            )}
+
+                            {/* Variant / Size - now shows full label properly */}
+                            <p className="text-[11px] text-[#87827D] font-light uppercase tracking-widest pt-1">
+                              SIZE: {sizeDisplay}
+                            </p>
                           </div>
-                          <p className="text-lg font-light text-[#2C2C2C]">₹{item.price.toLocaleString()}</p>
+
+                          <p className="text-lg font-light text-[#2C2C2C]">
+                            ₹{(item.price || 0).toLocaleString()}
+                          </p>
                         </div>
 
                         <div className="mt-6 sm:mt-auto flex justify-between items-center">
-                          {/* Quantity Switcher */}
                           <div className="flex items-center border border-[#D1CDC7] rounded-full px-1">
                             <button
                               onClick={() => handleQuantityChange(item.product._id, item.variant, item.quantity, -1)}
                               className="w-8 h-8 flex items-center justify-center text-[#2C2C2C] hover:text-[#948F89]"
+                              disabled={item.quantity <= 1}
                             >
                               <Minus size={12} />
                             </button>
-                            <span className="px-2 text-xs font-medium min-w-[24px] text-center">{item.quantity}</span>
+                            <span className="px-2 text-xs font-medium min-w-[24px] text-center">
+                              {item.quantity}
+                            </span>
                             <button
                               onClick={() => handleQuantityChange(item.product._id, item.variant, item.quantity, 1)}
                               className="w-8 h-8 flex items-center justify-center text-[#2C2C2C] hover:text-[#948F89]"
@@ -166,10 +217,6 @@ const CartPage = () => {
                   <span className="font-light">Subtotal</span>
                   <span className="text-[#2C2C2C]">₹{subtotal.toLocaleString()}</span>
                 </div>
-                {/* <div className="flex justify-between text-sm text-[#87827D]">
-                  <span className="font-light">Shipping</span>
-                  <span className="text-[#2C2C2C] font-serif">Free</span>
-                </div> */}
                 <div className="pt-6 border-t border-[#D1CDC7] flex justify-between items-baseline">
                   <span className="text-sm uppercase tracking-widest font-medium text-[#2C2C2C]">Total</span>
                   <span className="text-2xl md:text-3xl text-[#2C2C2C]">₹{total.toLocaleString()}</span>

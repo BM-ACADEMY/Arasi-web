@@ -7,6 +7,7 @@ const {
   getAllOrders,       // <--- Import
   updateOrderStatus,
   getDashboardStats,
+  calculateCosts,
   cancelOrder   // <--- Import
 } = require("../controllers/orderController");
 
@@ -17,6 +18,7 @@ router.post("/verify-payment", protect, verifyPayment);
 router.get("/my-orders", protect, getUserOrders);
 
 router.put("/:id/cancel", protect, cancelOrder);
+router.post('/calculate-costs', protect, calculateCosts);
 
 
 

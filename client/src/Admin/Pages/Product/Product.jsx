@@ -36,7 +36,17 @@ const Product = () => {
     category: "",
     subCategory: "",
     brand: "",
-    variants: [{ label: "", quantity: "", unit: "piece", price: "", originalPrice: "", stock: "" }],
+    // Variants now include weight inside them by default
+    variants: [{ 
+      label: "", 
+      quantity: "", 
+      unit: "piece", 
+      price: "", 
+      originalPrice: "", 
+      stock: "",
+      weight: "",       // Default empty
+      weightUnit: "kg"  // Default kg
+    }],
     details: [{ heading: "", content: "" }]
   };
   const [formData, setFormData] = useState(initialFormState);
@@ -83,15 +93,11 @@ const Product = () => {
   // ==========================
   const handleSearch = (e) => {
     setSearch(e.target.value);
-    // Debouncing could be added here, currently instant update
   };
 
-  // Trigger search on enter or button could be added, currently filtered client side or needs useEffect
   useEffect(() => {
-     // Optional: if you want live search, call fetchProducts(search) here with debounce
-     // For now keeping manual trigger logic or simple client filter if dataset small
-     fetchProducts(search);
-     setCurrentPage(1);
+      fetchProducts(search);
+      setCurrentPage(1);
   }, [search]);
 
 
@@ -117,6 +123,7 @@ const Product = () => {
     });
   };
 
+  // Generic handler for variant changes, works for weight/weightUnit too
   const handleVariantChange = (index, field, value) => {
     const updatedVariants = [...formData.variants];
     updatedVariants[index][field] = value;
@@ -126,7 +133,16 @@ const Product = () => {
   const addVariant = () => {
     setFormData({
       ...formData,
-      variants: [...formData.variants, { label: "", quantity: "", unit: "piece", price: "", originalPrice: "", stock: "" }]
+      variants: [...formData.variants, { 
+        label: "", 
+        quantity: "", 
+        unit: "piece", 
+        price: "", 
+        originalPrice: "", 
+        stock: "",
+        weight: "", 
+        weightUnit: "kg" 
+      }]
     });
   };
 
@@ -183,13 +199,23 @@ const Product = () => {
     if (product) {
       setIsEditing(true);
       setCurrentId(product._id);
+      
+      // Ensure variants have weight properties if editing old data
+      const loadedVariants = product.variants?.length 
+        ? product.variants.map(v => ({
+            ...v,
+            weight: v.weight || "", 
+            weightUnit: v.weightUnit || "kg"
+          }))
+        : [{ label: "", quantity: "", unit: "piece", price: "", originalPrice: "", stock: "", weight: "", weightUnit: "kg" }];
+
       setFormData({
         name: product.name,
         description: product.description || "",
         category: product.category?._id || "",
         subCategory: product.subCategory?._id || "",
         brand: product.brand || "",
-        variants: product.variants?.length ? product.variants : [{ label: "", quantity: "", unit: "piece", price: "", originalPrice: "", stock: "" }],
+        variants: loadedVariants,
         details: product.details?.length ? product.details : [{ heading: "", content: "" }]
       });
 
@@ -227,6 +253,7 @@ const Product = () => {
     data.append("category", formData.category);
     data.append("subCategory", formData.subCategory);
     data.append("brand", formData.brand);
+    // Note: weight is now inside variants string
     data.append("variants", JSON.stringify(formData.variants));
     data.append("details", JSON.stringify(formData.details));
 
@@ -300,7 +327,7 @@ const Product = () => {
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
 
-          {/* Table Header Row (Custom toolbar if needed, otherwise direct table) */}
+          {/* Table Header Row */}
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -318,10 +345,10 @@ const Product = () => {
                 ) : products.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="px-6 py-24 text-center">
-                       <div className="mx-auto w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mb-4">
+                        <div className="mx-auto w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mb-4">
                           <FiPackage className="text-slate-300" size={32} />
-                       </div>
-                       <p className="text-slate-500 font-medium">No products found.</p>
+                        </div>
+                        <p className="text-slate-500 font-medium">No products found.</p>
                     </td>
                   </tr>
                 ) : (
@@ -482,6 +509,35 @@ const Product = () => {
                                <input type="number" placeholder="0" value={variant.stock} onChange={(e) => handleVariantChange(index, 'stock', e.target.value)} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:border-indigo-500 outline-none" />
                              </div>
                            </div>
+
+                           {/* --- NEW WEIGHT INPUTS INSIDE VARIANT --- */}
+                           <div className="grid grid-cols-2 gap-3 mb-3">
+                               <div>
+                                   <label className="text-[10px] uppercase font-bold text-indigo-600 mb-1 block">Weight (Shipping)</label>
+                                   <input 
+                                     type="number" 
+                                     value={variant.weight} 
+                                     onChange={(e) => handleVariantChange(index, 'weight', e.target.value)} 
+                                     className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm focus:border-indigo-500 outline-none" 
+                                     placeholder="Ex: 1"
+                                   />
+                               </div>
+                               <div>
+                                   <label className="text-[10px] uppercase font-bold text-indigo-600 mb-1 block">Weight Unit</label>
+                                   <select 
+                                     value={variant.weightUnit} 
+                                     onChange={(e) => handleVariantChange(index, 'weightUnit', e.target.value)} 
+                                     className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm focus:border-indigo-500 outline-none"
+                                   >
+                                       <option value="kg">kg</option>
+                                       <option value="g">gram</option>
+                                       <option value="ml">ml</option>
+                                       <option value="l">liter</option>
+                                   </select>
+                               </div>
+                           </div>
+                           {/* -------------------------------------- */}
+
                            <div className="grid grid-cols-2 gap-3">
                              <div>
                                 <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">MRP (₹)</label>

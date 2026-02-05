@@ -1,8 +1,7 @@
-// controllers/productController.js
 const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
 const SubCategory = require("../models/subCategoryModel");
-const Order = require("../models/orderModel"); // <--- IMPORTED ORDER MODEL
+const Order = require("../models/orderModel");
 const slugify = require("slugify");
 const { saveImage } = require("../utils/uploadConfig");
 const fs = require("fs");
@@ -19,7 +18,6 @@ const deleteImage = (relativePath) => {
   if (fs.existsSync(fullPath)) try { fs.unlinkSync(fullPath); } catch (e) {}
 };
 
-// --- NEW FUNCTION: Get Best Sellers ---
 exports.getBestSellers = async (req, res) => {
   try {
     const topProducts = await Order.aggregate([
@@ -31,29 +29,25 @@ exports.getBestSellers = async (req, res) => {
           totalSold: { $sum: "$orderItems.quantity" }
         }
       },
-      { $match: { totalSold: { $gt: 10 } } }, // Filter: Sold more than 10
+      { $match: { totalSold: { $gt: 10 } } },
       { $sort: { totalSold: -1 } },
       { $limit: 10 }
     ]);
 
     const productIds = topProducts.map(item => item._id);
-    
-    // Fetch full product details
     const products = await Product.find({ _id: { $in: productIds } })
       .populate("category", "name")
       .populate("subCategory", "name");
 
-    // Preserve the order from the aggregation (Most sold first)
     const sortedProducts = productIds
       .map(id => products.find(p => p._id.toString() === id.toString()))
-      .filter(p => p !== undefined); // Remove any products that might have been deleted
+      .filter(p => p !== undefined);
 
     res.status(200).json({ success: true, data: sortedProducts.map(formatProduct) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-// --------------------------------------
 
 exports.createProduct = async (req, res) => {
   try {
@@ -66,6 +60,7 @@ exports.createProduct = async (req, res) => {
       });
     }
 
+    // REMOVED weight and weightUnit from root destructuring
     const { name, variants, details } = req.body;
 
     let imagePaths = [];
@@ -86,7 +81,7 @@ exports.createProduct = async (req, res) => {
       ...req.body,
       slug: slugify(name, { lower: true }),
       images: imagePaths,
-      variants: parsedVariants,
+      variants: parsedVariants, // Weight is inside here now
       details: parsedDetails
     });
 

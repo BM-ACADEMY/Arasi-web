@@ -1,46 +1,80 @@
 const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  slug: { type: String, unique: true },
-  description: String,
-
-  // --- NEW: Detailed Info Section ---
-  details: [
-    {
-      heading: String, // e.g. "Ingredients"
-      content: String  // e.g. "Coconut Oil, Lavender Extract..."
-    }
-  ],
-
+  name: {
+    type: String,
+    required: true,
+  },
+  slug: {
+    type: String,
+    unique: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  price: {
+    type: Number,
+    required: true,
+  },
+  discountPrice: {
+    type: Number,
+  },
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category",
-    required: true
+    required: true,
   },
   subCategory: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "SubCategory",
-    required: true
   },
-
-  brand: String,
-  images: [String],
-
+  brand: {
+    type: String,
+  },
+  stock: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  images: [
+    {
+      type: String,
+      required: true,
+    },
+  ],
+  // Variants now hold the weight info
   variants: [
     {
       label: String,
-      quantity: Number,
-      unit: { type: String, required: true, default: "piece" },
+      quantity: String,
+      unit: String,
       price: Number,
       originalPrice: Number,
-      stock: Number
+      stock: Number,
+      // --- MOVED HERE ---
+      weight: {
+        type: Number,
+        default: 0.5
+      },
+      weightUnit: {
+        type: String,
+        enum: ['kg', 'g', 'ml', 'l'],
+        default: 'kg'
+      }
+      // ------------------
     }
   ],
-
-  isActive: { type: Boolean, default: true }
+  details: [
+    {
+      heading: String,
+      content: String
+    }
+  ],
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
 }, { timestamps: true });
-
-productSchema.index({ name: "text", brand: "text" });
 
 module.exports = mongoose.model("Product", productSchema);

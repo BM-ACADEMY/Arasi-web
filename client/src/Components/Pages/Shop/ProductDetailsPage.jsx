@@ -7,14 +7,14 @@ import toast from 'react-hot-toast';
 import ProductCard from './ProductCard'; 
 import {
   Star, ShoppingBag, ChevronRight, Minus, Plus,
-  Truck, ShieldCheck, Share2, ChevronDown, ChevronUp, User
+  Truck, ShieldCheck, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 const ProductDetailsPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { user } = useAuth(); // Using user from AuthContext
+  const { user } = useAuth();
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -43,7 +43,7 @@ const ProductDetailsPage = () => {
     document.head.appendChild(link);
   }, []);
 
-  // Fetch Product Data & Related Products
+  // Fetch Product Data
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -54,13 +54,11 @@ const ProductDetailsPage = () => {
           const currentProduct = data.data;
           setProduct(currentProduct);
           
-          // Reset interaction states
           setSelectedImageIndex(0);
           setSelectedVariantIndex(0);
           setQuantity(1);
           setIsAdded(false);
 
-          // Fetch associated data
           fetchReviews(currentProduct._id);
           fetchRelatedProducts(currentProduct);
         }
@@ -75,7 +73,6 @@ const ProductDetailsPage = () => {
     if (slug) fetchProduct();
   }, [slug]);
 
-  // Fetch Related Products
   const fetchRelatedProducts = async (currentProduct) => {
     try {
       let query = "";
@@ -84,16 +81,13 @@ const ProductDetailsPage = () => {
       } else if (currentProduct.category?._id) {
         query = `category=${currentProduct.category._id}`;
       }
-
       if (!query) return;
 
       const { data } = await api.get(`/products?${query}`);
-
       if (data.success) {
         const filtered = data.data
           .filter(p => p._id !== currentProduct._id)
           .slice(0, 4);
-        
         setRelatedProducts(filtered);
       }
     } catch (error) {
@@ -143,49 +137,36 @@ const ProductDetailsPage = () => {
     }
   };
 
-  // --- LOGIC START ---
-  const getActiveVariant = () => {
+  // --- HELPER: Use Variant ID for Cart (Best Practice) ---
+  const getActiveVariantId = () => {
     if (!product) return null;
     const active = product.variants?.[selectedVariantIndex] || {};
-    return active.label || active.unit || null;
+    return active._id || null;
   };
 
   const handleInitialAdd = async () => {
     if (!product) return;
-    const variantLabel = getActiveVariant();
+    const variantId = getActiveVariantId();
     setIsAdded(true);
     setQuantity(1);
-    await addToCart(product._id, 1, variantLabel);
+    await addToCart(product._id, 1, variantId);
   };
 
   const handleIncrement = async () => {
-    const variantLabel = getActiveVariant();
+    const variantId = getActiveVariantId();
     setQuantity(prev => prev + 1);
-    await addToCart(product._id, 1, variantLabel);
+    await addToCart(product._id, 1, variantId);
   };
 
   const handleDecrement = async () => {
-    const variantLabel = getActiveVariant();
+    const variantId = getActiveVariantId();
     if (quantity > 1) {
       setQuantity(prev => prev - 1);
-      await addToCart(product._id, -1, variantLabel);
+      await addToCart(product._id, -1, variantId);
     } else {
       setIsAdded(false);
       setQuantity(1);
-      await addToCart(product._id, -1, variantLabel);
-    }
-  };
-
-  const handleShare = async () => {
-    const shareData = {
-      title: product?.name || 'Product',
-      text: 'Check out this product!',
-      url: window.location.href,
-    };
-    if (navigator.share) {
-      try { await navigator.share(shareData); } catch (err) { console.log('Share canceled', err); }
-    } else {
-      try { await navigator.clipboard.writeText(window.location.href); toast.success('Link copied!'); } catch (err) { }
+      await addToCart(product._id, -1, variantId);
     }
   };
 
@@ -211,7 +192,6 @@ const ProductDetailsPage = () => {
     const index = name.charCodeAt(0) % colors.length;
     return colors[index];
   };
-  // --- LOGIC END ---
 
   const fontSerif = { fontFamily: '"Playfair Display", serif' };
 
@@ -256,120 +236,110 @@ const ProductDetailsPage = () => {
           <span className="text-black line-clamp-1">{product.name}</span>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20">
-
-          {/* Left: Gallery */}
-          <div className="lg:col-span-7">
-            <div className="flex flex-col-reverse lg:flex-row gap-6 sticky top-32">
-              
-              {/* Thumbnails */}
-              <div className="flex lg:flex-col gap-4 overflow-x-auto lg:overflow-y-auto w-full lg:w-24 shrink-0 no-scrollbar justify-start lg:max-h-[550px] pb-2 lg:pb-0 pr-1">
-                {images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onMouseEnter={() => setSelectedImageIndex(idx)}
-                    onClick={() => setSelectedImageIndex(idx)}
-                    className={`relative w-20 h-24 lg:w-full lg:h-32 flex-shrink-0 border transition-all duration-300 rounded-sm overflow-hidden ${
-                      selectedImageIndex === idx
-                        ? 'border-gray-900 ring-1 ring-gray-900 opacity-100'
-                        : 'border-transparent opacity-60 hover:opacity-100'
-                    }`}
-                  >
-                    <img src={img} alt={`View ${idx}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
+          {/* --- LEFT COLUMN: Images --- */}
+          <div className="lg:col-span-7 order-last lg:order-first">
+            <div className="sticky top-28">
               {/* Main Image */}
-              <div className="flex-1 bg-white relative aspect-[4/5] lg:aspect-auto lg:h-[700px] border border-gray-100 overflow-hidden group rounded-sm shadow-sm">
-                <img src={images[selectedImageIndex]} alt="Main View" className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-105" />
-                {originalPrice > currentPrice && (
-                  <div className="absolute top-4 left-4 bg-[#e11d48] text-white text-[10px] font-bold px-3 py-1.5 uppercase tracking-widest shadow-sm">
-                    -{Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}%
-                  </div>
-                )}
-                <button onClick={handleShare} className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-sm hover:bg-white text-gray-700 transition-all opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0" title="Share">
-                  <Share2 size={16} />
-                </button>
+              <div className="aspect-square w-full bg-white border border-gray-200 overflow-hidden mb-4">
+                <img
+                  src={images[selectedImageIndex]}
+                  alt={`${product.name} - View ${selectedImageIndex + 1}`}
+                  className="w-full h-full object-cover mix-blend-multiply"
+                  loading="lazy"
+                />
               </div>
+
+              {/* Thumbnail Gallery */}
+              {images.length > 1 && (
+                <div className="grid grid-cols-4 gap-3">
+                  {images.map((img, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => setSelectedImageIndex(idx)}
+                      className={`aspect-square bg-white border overflow-hidden cursor-pointer transition-all ${
+                        selectedImageIndex === idx ? 'border-gray-900 shadow-md' : 'border-gray-200 hover:border-gray-400'
+                      }`}
+                    >
+                      <img
+                        src={img}
+                        alt={`${product.name} thumbnail ${idx + 1}`}
+                        className="w-full h-full object-cover mix-blend-multiply scale-90"
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Right: Details */}
-          <div className="lg:col-span-5 flex flex-col">
-            <div className="mb-6 border-b border-gray-200 pb-6">
-              <h2 className="text-xs tracking-widest text-[#507A58] font-bold uppercase mb-3">
-                {product.subCategory?.name || "Premium Collection"}
-              </h2>
-              <h1 style={fontSerif} className="text-3xl md:text-4xl text-gray-900 leading-tight mb-4">
-                {product.name}
-              </h1>
+          {/* --- RIGHT COLUMN: Details --- */}
+          <div className="lg:col-span-5 order-first lg:order-last">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 leading-tight" style={fontSerif}>
+              {product.name}
+            </h1>
+            <p className="text-sm text-gray-500 mb-4 uppercase tracking-wider font-medium">{product.brand || 'Arasi'}</p>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-baseline gap-3">
-                  <span className="text-2xl font-medium tracking-wide">
-                    ₹{currentPrice.toLocaleString()}
-                  </span>
-                  {originalPrice > currentPrice && (
-                    <span className="text-lg text-gray-400 line-through font-light">
-                      ₹{originalPrice.toLocaleString()}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1 rounded-full">
-                  <Star size={14} fill="#fbbf24" className="text-yellow-400" />
-                  <span className="text-sm font-semibold text-gray-800">
-                    {totalReviews > 0 ? averageRating : "4.8"}
-                  </span>
-                  <span className="text-xs text-gray-400 border-l border-gray-300 pl-1.5 ml-1">
-                    {totalReviews} Reviews
-                  </span>
-                </div>
+            {/* Ratings */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex gap-0.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={16}
+                    fill={star <= averageRating ? "#1f2937" : "none"}
+                    className={star <= averageRating ? "text-gray-900" : "text-gray-300"}
+                  />
+                ))}
               </div>
+              <a href="#reviews" className="text-sm text-gray-600 hover:text-gray-900 underline underline-offset-2">
+                {totalReviews} Reviews
+              </a>
+            </div>
+
+            {/* Pricing */}
+            <div className="flex items-baseline gap-3 mb-6">
+              <span className="text-2xl font-bold text-gray-900">₹{currentPrice.toLocaleString()}</span>
+              {originalPrice > currentPrice && (
+                <span className="text-lg text-gray-400 line-through">₹{originalPrice.toLocaleString()}</span>
+              )}
             </div>
 
             {/* Variants */}
-            {product.variants?.length > 0 && (
-              <div className="mb-8">
-                <span className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Select Variant</span>
+            {product.variants?.length > 1 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-3">Select Variant</h3>
                 <div className="flex flex-wrap gap-3">
-                  {product.variants.map((v, idx) => (
+                  {product.variants.map((variant, idx) => (
                     <button
                       key={idx}
-                      onClick={() => { setSelectedVariantIndex(idx); setIsAdded(false); setQuantity(1); }}
-                      className={`min-w-[4rem] px-5 py-2.5 text-sm font-medium transition-all duration-200 border rounded-sm ${
+                      onClick={() => setSelectedVariantIndex(idx)}
+                      className={`px-5 py-2.5 text-xs font-medium uppercase tracking-wider border rounded-sm transition-all ${
                         selectedVariantIndex === idx
                           ? 'bg-gray-900 text-white border-gray-900 shadow-md'
-                          : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
                       }`}
                     >
-                      {v.label || v.unit}
+                      {variant.label || variant.unit}
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Cart Buttons - UPDATED LOGIC */}
-            <div className="mb-8">
-              {user ? (
-                /* USER IS LOGGED IN: Show Add to Basket / Quantity Controls */
-                !isAdded ? (
-                  <button onClick={handleInitialAdd} className="w-full bg-[#507A58] text-white h-14 hover:bg-[#3e6145] transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:shadow-lg uppercase tracking-wider text-sm font-bold rounded-sm">
-                    <ShoppingBag size={18} /> Add to Basket
-                  </button>
-                ) : (
-                  <div className="flex items-center justify-between border border-[#507A58] h-14 px-4 bg-green-50 rounded-sm">
-                    <button onClick={handleDecrement} className="p-2 text-[#507A58] hover:bg-white hover:shadow-sm rounded transition-all"><Minus size={18} /></button>
-                    <span className="font-bold text-lg text-[#507A58] w-12 text-center">{quantity}</span>
-                    <button onClick={handleIncrement} className="p-2 text-[#507A58] hover:bg-white hover:shadow-sm rounded transition-all"><Plus size={18} /></button>
-                  </div>
-                )
+            {/* Add to Cart */}
+            <div className="mb-6">
+              {isAdded ? (
+                <div className="flex items-center justify-between bg-gray-100 p-3 rounded-sm">
+                  <button onClick={handleDecrement} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><Minus size={18} /></button>
+                  <span className="text-lg font-bold">{quantity}</span>
+                  <button onClick={handleIncrement} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><Plus size={18} /></button>
+                </div>
               ) : (
-                 <button onClick={() => navigate("/login")}  className="w-full bg-[#507A58] text-white h-14 hover:bg-[#3e6145] transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:shadow-lg uppercase tracking-wider text-sm font-bold rounded-sm">
-                    <ShoppingBag size={18} /> Add to Basket
-                  </button>
+                <button onClick={handleInitialAdd} className="w-full bg-[#507A58] text-white h-14 hover:bg-[#3e6145] transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:shadow-lg uppercase tracking-wider text-sm font-bold rounded-sm">
+                  <ShoppingBag size={18} /> Add to Basket
+                </button>
               )}
             </div>
 
@@ -379,10 +349,27 @@ const ProductDetailsPage = () => {
               <div className="flex items-center gap-3 py-3 border-t border-b border-gray-100"><ShieldCheck size={18} /> <span>Secure Checkout</span></div>
             </div>
 
-            <div className="mb-10 text-gray-600 leading-relaxed font-light text-sm">
-              <h3 className="font-bold text-gray-900 mb-2 uppercase tracking-wider text-xs">Description</h3>
+            <div className="mb-10 text-gray-600 leading-relaxed font-medium text-sm">
+              <h3 className="font-bold text-gray-900 mb-2 captilize tracking-wider text-xs">Description</h3>
               <p>{product.description}</p>
             </div>
+
+            {/* --- NEW SECTION: PRODUCT DETAILS --- */}
+            {product.details && product.details.length > 0 && (
+              <div className="mb-10 grid grid-cols-1 gap-4 border-t border-gray-100 pt-6">
+                {product.details.map((detail, idx) => (
+                  <div key={idx}>
+                    <h4 className="font-bold text-gray-900 mb-1 uppercase tracking-wider text-xs">
+                      {detail.heading}
+                    </h4>
+                    <p className="text-gray-600 font-medium text-sm">
+                      {detail.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* ------------------------------------- */}
 
             {/* REVIEWS SECTION */}
             <div className="border-t border-gray-200 pt-10" id="reviews">

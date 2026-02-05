@@ -6,14 +6,20 @@ const storeSettingsSchema = new mongoose.Schema({
     default: 0,
     required: true
   },
-  // Array of objects for state-specific logic
+  // UPDATED: Shipping charges now contain tiers
   shippingCharges: [
     {
       state: { type: String, required: true },
-      charge: { type: Number, required: true }
+      tiers: [
+        {
+          limit: { type: Number, required: true }, // The weight limit (e.g. 1, 3, 5)
+          unit: { type: String, required: true, default: 'kg' },
+          price: { type: Number, required: true }  // The cost for this tier
+        }
+      ]
     }
   ],
-  // Fallback if state not found in shippingCharges
+  // Fallback if state not found
   defaultShippingCharge: {
     type: Number,
     default: 0

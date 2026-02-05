@@ -12,17 +12,43 @@ import {
   ShieldCheck,
   Truck,
   Receipt,
-  MapPin
+  MapPin,
+  Scale
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-// Ensure you have created this file as discussed previously
 import { INDIAN_STATES } from "@/Data/Data";
 
+// --- UPDATED HELPER: Robust Image URL Logic ---
 const getImageUrl = (imagePath) => {
   if (!imagePath) return "";
   if (imagePath.startsWith("http")) return imagePath;
-  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') ;
-  return `${baseUrl}/${imagePath}`;
+
+  // 1. Get the API URL from environment, or default to empty
+  const apiVar = import.meta.env.VITE_API_URL || "";
+
+  // 2. Remove "/api" from the end if present (and any trailing slashes)
+  const baseUrl = apiVar.replace(/\/api\/?$/, "").replace(/\/$/, "");
+
+  // 3. Ensure imagePath doesn't start with a slash to avoid double slashes
+  const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+
+  // 4. Combine
+  return `${baseUrl}/${cleanPath}`;
+};
+
+// --- HELPER: Weight Conversion (Must match Backend Logic) ---
+const getWeightInKg = (weight, unit) => {
+  const w = parseFloat(weight) || 0;
+  switch (unit?.toLowerCase()) {
+    case 'g':
+    case 'ml':
+      return w / 1000;
+    case 'kg':
+    case 'l':
+      return w;
+    default:
+      return w; // Default to KG if unit is missing
+  }
 };
 
 const CheckoutPage = () => {
@@ -49,11 +75,56 @@ const CheckoutPage = () => {
     address: "", city: "", state: "", pincode: "", phone: ""
   });
 
+  // Costs State (Now fetched from backend for accuracy)
+  const [costs, setCosts] = useState({
+    subtotal: 0,
+    gst: 0,
+    shipping: 0,
+    totalWeight: 0,
+    total: 0
+  });
+
   // Initial Fetch
   useEffect(() => {
     fetchAddresses();
     fetchSettings();
   }, []);
+
+  // Fetch Costs from Backend when Address Changes
+  useEffect(() => {
+    if (selectedAddressId && cart?.items?.length > 0) {
+      const fetchBackendCosts = async () => {
+        const selectedAddress = savedAddresses.find(a => a._id === selectedAddressId);
+        if (!selectedAddress) return;
+
+        try {
+          const { data } = await api.post("/orders/calculate-costs", {
+            shippingState: selectedAddress.state
+          });
+          if (data.success) {
+            setCosts(data.costs);
+          } else {
+            toast.error("Failed to calculate costs from server. Using local estimate.");
+            setCosts(calculateLocalCosts());
+          }
+        } catch (error) {
+          toast.error("Error fetching costs. Using local estimate.");
+          setCosts(calculateLocalCosts());
+        }
+      };
+
+      fetchBackendCosts();
+    } else {
+      // Reset costs if no address or empty cart
+      setCosts({
+        subtotal: cart?.totalAmount || 0,
+        gst: 0,
+        shipping: 0,
+        totalWeight: 0,
+        total: cart?.totalAmount || 0
+      });
+    }
+  }, [selectedAddressId, cart, savedAddresses, storeSettings]);
 
   const fetchAddresses = async () => {
     try {
@@ -83,26 +154,87 @@ const CheckoutPage = () => {
     }
   };
 
-  // --- COST CALCULATION LOGIC ---
-  const getSelectedAddress = () => savedAddresses.find(a => a._id === selectedAddressId);
-
-  const calculateCosts = () => {
+  // Local Fallback Calculation (In case backend fails)
+  const calculateLocalCosts = () => {
     const subtotal = cart?.totalAmount || 0;
-
-    // 1. Calculate GST
     const gstAmount = Math.round((subtotal * storeSettings.gstRate) / 100);
 
-    // 2. Calculate Shipping based on selected address state
-    let shippingCost = storeSettings.defaultShippingCharge;
-    const currentAddress = getSelectedAddress();
+    // 1. Calculate Total Cart Weight
+    let totalWeightKg = 0;
 
-    if (currentAddress) {
-      // Robust case-insensitive check
+    if (cart && cart.items) {
+      cart.items.forEach((item, index) => {
+        const product = item.product;
+
+        // --- ID MATCHING LOGIC ---
+        const itemVariantId = typeof item.variant === 'object' ? item.variant?._id : item.variant;
+        const itemVariantIdString = itemVariantId ? String(itemVariantId) : null;
+
+        // Try to find the specific variant
+        let variantObj = product.variants?.find(v => String(v._id) === itemVariantIdString);
+
+        // --- BACKEND PARITY FIX: Fallback to first variant if specific one not found ---
+        if (!variantObj && product.variants && product.variants.length > 0) {
+          console.warn(`Item ${index}: Variant ID ${itemVariantIdString} not found. Falling back to first variant.`);
+          variantObj = product.variants[0];
+        }
+
+        // --- DETERMINE WEIGHT ---
+        let weight = 0;
+        let unit = 'kg';
+
+        if (variantObj && variantObj.weight) {
+          weight = variantObj.weight;
+          unit = variantObj.weightUnit;
+        } else if (product.weight) {
+          weight = product.weight;
+          unit = product.weightUnit;
+        }
+
+        const itemTotalWeight = getWeightInKg(weight, unit) * item.quantity;
+        totalWeightKg += itemTotalWeight;
+
+        // DEBUG LOG: Remove this after fixing
+        console.log(`Item: ${product.name} | Variant Found: ${!!variantObj} | Weight: ${weight}${unit} | Item Total KG: ${itemTotalWeight}`);
+      });
+    }
+
+    console.log("Total Cart Weight (KG):", totalWeightKg);
+
+    // 2. Calculate Shipping
+    let shippingCost = storeSettings.defaultShippingCharge || 0;
+    const currentAddress = savedAddresses.find(a => a._id === selectedAddressId);
+
+    if (currentAddress && storeSettings.shippingCharges) {
+      const userState = currentAddress.state?.toLowerCase().trim();
+      console.log("User State:", userState); // DEBUG
+
       const stateRule = storeSettings.shippingCharges.find(
-        s => s.state.toLowerCase().trim() === currentAddress.state.toLowerCase().trim()
+        s => s.state?.toLowerCase().trim() === userState
       );
+
       if (stateRule) {
-        shippingCost = stateRule.charge;
+        console.log("State Rule Found:", stateRule); // DEBUG
+
+        if (stateRule.tiers && stateRule.tiers.length > 0) {
+          const sortedTiers = [...stateRule.tiers].sort((a, b) => a.limit - b.limit);
+
+          // Find tier
+          const matchingTier = sortedTiers.find(tier => totalWeightKg <= tier.limit);
+
+          if (matchingTier) {
+            shippingCost = matchingTier.price;
+            console.log("Matched Tier:", matchingTier); // DEBUG
+          } else {
+            // Exceeds max tier -> Highest price
+            shippingCost = sortedTiers[sortedTiers.length - 1].price;
+            console.log("Exceeds max tier, using highest:", shippingCost); // DEBUG
+          }
+        } else if (stateRule.charge !== undefined) {
+          shippingCost = stateRule.charge;
+        }
+      } else {
+        console.log("No State Rule found for:", userState);
       }
     }
 
@@ -110,11 +242,10 @@ const CheckoutPage = () => {
       subtotal,
       gst: gstAmount,
       shipping: shippingCost,
+      totalWeight: totalWeightKg,
       total: subtotal + gstAmount + shippingCost
     };
   };
-
-  const costs = calculateCosts();
 
   // --- HANDLERS ---
   const handleFormChange = (e) => setNewAddress({ ...newAddress, [e.target.name]: e.target.value });
@@ -160,11 +291,11 @@ const CheckoutPage = () => {
   const handlePayment = async () => {
     if (!selectedAddressId) return toast.error("Please select a shipping address");
 
-    const deliveryAddress = getSelectedAddress();
+    const deliveryAddress = savedAddresses.find(a => a._id === selectedAddressId);
     setLoading(true);
 
     try {
-      // Pass the selected state to the backend for final calculation
+      // Create Order on Backend (Final Calculation Check)
       const { data: orderData } = await api.post("/orders/create-order", {
         shippingState: deliveryAddress.state
       });
@@ -180,7 +311,6 @@ const CheckoutPage = () => {
           contact: deliveryAddress.phone,
         },
         theme: { color: "#1c1917" },
-
         handler: async function (response) {
           const verifyPaymentPromise = api.post("/orders/verify-payment", {
             ...response,
@@ -397,47 +527,78 @@ const CheckoutPage = () => {
 
                 {/* Cart Items List */}
                 <div className="space-y-6 mb-8 max-h-[35vh] overflow-y-auto pr-2 custom-scrollbar">
-                  {cart.items.map((item) => (
-                    <div key={item._id} className="flex gap-4 py-2">
-                      <div className="w-14 h-16 bg-white border border-stone-100 flex-shrink-0 overflow-hidden">
-                        <img src={getImageUrl(item.product.images?.[0])} alt={item.product.name} className="w-full h-full object-cover opacity-90" />
+                  {cart.items.map((item) => {
+                    // ── Added Variant Display Logic (Same as CartPage) ──
+                    let sizeDisplay = "Standard";
+                    if (item.variant) {
+                       if (typeof item.variant === 'string' && item.variant.length > 10) {
+                         const matchedVariant = item.product.variants?.find(
+                           v => v._id?.toString() === item.variant
+                         );
+                         if (matchedVariant) {
+                           if (matchedVariant.label) {
+                             sizeDisplay = matchedVariant.label;
+                             if (matchedVariant.unit) sizeDisplay += ` ${matchedVariant.unit}`;
+                           } else if (matchedVariant.weight && matchedVariant.weightUnit) {
+                             sizeDisplay = `${matchedVariant.weight}${matchedVariant.weightUnit}`;
+                           } else if (matchedVariant.unit) {
+                             sizeDisplay = matchedVariant.unit;
+                           }
+                         }
+                       } else {
+                         sizeDisplay = item.variant;
+                       }
+                    }
+
+                    return (
+                      <div key={item._id} className="flex gap-4 py-2">
+                        <div className="w-14 h-16 bg-white border border-stone-100 flex-shrink-0 overflow-hidden">
+                          <img src={getImageUrl(item.product.images?.[0])} alt={item.product.name} className="w-full h-full object-cover opacity-90" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wide truncate">{item.product.name}</h4>
+                          <p className="text-[10px] text-stone-500 mt-1 flex flex-col sm:flex-row sm:gap-3">
+                            <span>Size: {sizeDisplay}</span>
+                            <span className="hidden sm:inline text-stone-300">|</span>
+                            <span>Qty: {item.quantity}</span>
+                          </p>
+                        </div>
+                        <div className="text-sm font-medium text-stone-900">
+                          ₹{(item.price * item.quantity).toLocaleString()}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wide truncate">{item.product.name}</h4>
-                        <p className="text-[10px] text-stone-500 mt-1">Qty: {item.quantity}</p>
-                      </div>
-                      <div className="text-sm font-medium text-stone-900">
-                        ₹{(item.price * item.quantity).toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Price Breakdown */}
                 <div className="border-t border-stone-200 pt-6 space-y-3">
                   <div className="flex justify-between text-xs text-stone-500 tracking-wide uppercase">
                     <span>Subtotal</span>
-                    <span>₹{costs.subtotal.toLocaleString()}</span>
+                    <span className="font-medium text-gray-900">₹{costs.subtotal.toLocaleString()}</span>
                   </div>
 
-                  {/* Tax Display */}
+                  {/* GST Display */}
                   <div className="flex justify-between text-xs text-stone-500 tracking-wide uppercase">
                     <span className="flex items-center gap-1"><Receipt size={12}/> GST ({storeSettings.gstRate}%)</span>
-                    <span>+ ₹{costs.gst.toLocaleString()}</span>
+                    <span className="font-medium text-gray-900">+ ₹{costs.gst.toLocaleString()}</span>
                   </div>
 
                   {/* Shipping Display */}
                   <div className="flex justify-between text-xs text-stone-500 tracking-wide uppercase">
-                    <span className="flex items-center gap-1"><Truck size={12}/> Delivery</span>
-                    {costs.shipping === 0 ? (
-                      <span className="text-green-600 font-bold">Free</span>
-                    ) : (
-                      <span>+ ₹{costs.shipping.toLocaleString()}</span>
-                    )}
+                    <span className="flex items-center gap-1"><Truck size={12}/> Delivery Charges</span>
+                    <span className="font-medium text-gray-900">
+                      {costs.shipping === 0 ? (
+                        <span className="text-green-600 font-bold">Free</span>
+                      ) : (
+                        `+ ₹${costs.shipping.toLocaleString()}`
+                      )}
+                    </span>
                   </div>
 
+                  {/* Final Total */}
                   <div className="flex justify-between items-baseline pt-4 mt-2 border-t border-stone-200">
-                    <span className="text-sm font-bold uppercase tracking-widest text-stone-900">Total</span>
+                    <span className="text-sm font-bold uppercase tracking-widest text-stone-900">Total Paid</span>
                     <span className="text-2xl text-stone-900">₹{costs.total.toLocaleString()}</span>
                   </div>
                 </div>
