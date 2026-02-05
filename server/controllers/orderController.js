@@ -205,8 +205,8 @@ exports.verifyPayment = async (req, res) => {
             </p>
 
             <p style="color: #555; line-height: 1.6; margin: 0 0 24px;">
-              ${isUser 
-                ? "Your order has been successfully placed. We're preparing it with care." 
+              ${isUser
+                ? "Your order has been successfully placed. We're preparing it with care."
                 : `A new order has been placed by <strong>${req.user.name}</strong> (${req.user.email}).`}
             </p>
 
@@ -258,8 +258,8 @@ exports.verifyPayment = async (req, res) => {
             ` : ''}
 
             <p style="text-align: center; color: #777; font-size: 13px; margin: 30px 0 10px;">
-              ${isUser 
-                ? "We'll notify you once your order ships. Thank you for shopping with us!" 
+              ${isUser
+                ? "We'll notify you once your order ships. Thank you for shopping with us!"
                 : "Please process this order at your earliest convenience."}
             </p>
           </div>
@@ -361,6 +361,7 @@ exports.updateOrderStatus = async (req, res) => {
 };
 
 // @desc    Cancel Order (User)
+// @desc    Cancel Order (User)
 exports.cancelOrder = async (req, res) => {
   try {
     const { reason } = req.body;
@@ -376,7 +377,9 @@ exports.cancelOrder = async (req, res) => {
 
     order.orderStatus = "Cancelled";
     order.cancellationReason = reason;
-    await order.save(
+
+    // FIX: Added closing parenthesis and semicolon below
+    await order.save();
 
     res.status(200).json({ success: true, message: "Order cancelled", order });
   } catch (error) {
@@ -401,7 +404,7 @@ exports.getDashboardStats = async (req, res) => {
             // Count if status IS Cancelled
             $sum: { $cond: [{ $eq: ["$orderStatus", "Cancelled"] }, 1, 0] },
           },
-          totalCancelledAmount: { 
+          totalCancelledAmount: {
             // <--- NEW: Sum amount if status IS Cancelled
             $sum: { $cond: [{ $eq: ["$orderStatus", "Cancelled"] }, "$totalAmount", 0] },
           },
@@ -450,8 +453,8 @@ exports.getDashboardStats = async (req, res) => {
       .limit(5);
 
     // 5. Unsold Products
-    const distinctSoldProductIds = await Order.distinct("orderItems.product", { 
-       orderStatus: { $ne: "Cancelled" } 
+    const distinctSoldProductIds = await Order.distinct("orderItems.product", {
+       orderStatus: { $ne: "Cancelled" }
     });
 
     const unsoldProducts = await Product.find({
@@ -464,11 +467,11 @@ exports.getDashboardStats = async (req, res) => {
     res.status(200).json({
       success: true,
       // Default values added for safety
-      stats: orderStats[0] || { 
-        totalRevenue: 0, 
-        totalCancelledOrders: 0, 
-        totalCancelledAmount: 0, 
-        totalOrders: 0 
+      stats: orderStats[0] || {
+        totalRevenue: 0,
+        totalCancelledOrders: 0,
+        totalCancelledAmount: 0,
+        totalOrders: 0
       },
       topProducts: productSales,
       salesTrend,
