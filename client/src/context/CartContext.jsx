@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import api from "../services/api";
-// Adjust this import path if needed based on your folder structure
 import { useAuth } from "./AuthContext"; 
 import toast from "react-hot-toast";
 
@@ -25,8 +24,15 @@ export const CartProvider = ({ children }) => {
     try {
       const { data } = await api.get("/cart");
       if (data.success) {
-        setCart(data.data);
-        const count = data.data?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
+        // --- FIX: Filter out null products immediately ---
+        // If a product was deleted from DB, item.product will be null.
+        // We filter them out so the UI doesn't crash.
+        const validItems = data.data?.items?.filter(item => item.product) || [];
+        
+        const cleanCart = { ...data.data, items: validItems };
+        setCart(cleanCart);
+        
+        const count = validItems.reduce((acc, item) => acc + item.quantity, 0);
         setCartCount(count);
       }
     } catch (error) {
@@ -34,22 +40,31 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // 2. Safe ID Helper
+  // 2. Safe ID Helper (FIXED)
   const getProductId = (item) => {
+    // Safety check: if product is null, return empty string to prevent crash
+    if (!item || !item.product) return ""; 
     return (item.product._id || item.product).toString();
   };
 
-  // 3. Get Quantity Helper (Optional: Updated to support variants if needed)
+  // 3. Get Quantity Helper
   const getItemQuantity = (productId, variant = null) => {
     if (!cart || !cart.items) return 0;
-    const item = cart.items.find((item) => 
-      getProductId(item) === productId.toString() && 
-      (!variant || item.variant === variant)
-    );
+    
+    const item = cart.items.find((item) => {
+      // Skip invalid items to be safe
+      if (!item.product) return false; 
+
+      return (
+        getProductId(item) === productId.toString() && 
+        (!variant || item.variant === variant)
+      );
+    });
+    
     return item ? item.quantity : 0;
   };
 
-  // 4. Add to Cart (FIXED: Accepts variant and sends it to backend)
+  // 4. Add to Cart
   const addToCart = async (productId, quantity = 1, variant = null) => {
     if (!user) {
       toast.error("Please login to add items to cart");
@@ -57,7 +72,6 @@ export const CartProvider = ({ children }) => {
     }
 
     try {
-      // Pass 'variant' in the body so the controller can save it
       const { data } = await api.post("/cart/add", { 
         productId, 
         quantity, 
@@ -65,11 +79,14 @@ export const CartProvider = ({ children }) => {
       });
 
       if (data.success) {
-        setCart(data.data);
-        const count = data.data.items.reduce((acc, item) => acc + item.quantity, 0);
+        // Also apply the filter here just in case backend returns ghost items
+        const validItems = data.data.items.filter(item => item.product);
+        const cleanCart = { ...data.data, items: validItems };
+
+        setCart(cleanCart);
+        const count = validItems.reduce((acc, item) => acc + item.quantity, 0);
         setCartCount(count);
         
-        // Only show toast for manual adds (quantity > 0)
         if (quantity > 0) toast.success("Cart updated");
         return true;
       }
@@ -85,8 +102,11 @@ export const CartProvider = ({ children }) => {
     try {
       const { data } = await api.delete(`/cart/${itemId}`);
       if (data.success) {
-        setCart(data.data);
-        const count = data.data.items.reduce((acc, item) => acc + item.quantity, 0);
+        const validItems = data.data.items.filter(item => item.product);
+        const cleanCart = { ...data.data, items: validItems };
+
+        setCart(cleanCart);
+        const count = validItems.reduce((acc, item) => acc + item.quantity, 0);
         setCartCount(count);
         toast.success("Item removed");
       }
@@ -96,19 +116,17 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // 6. Decrease Quantity Logic (Updated to handle variants)
+  // 6. Decrease Quantity Logic
   const decreaseQty = async (productId, variant = null) => {
     if (!cart) return;
 
-    // Find specific item by ID AND variant
-    const item = cart.items.find((i) => 
-      getProductId(i) === productId.toString() && 
-      (!variant || i.variant === variant)
-    );
+    const item = cart.items.find((i) => {
+       if (!i.product) return false;
+       return getProductId(i) === productId.toString() && (!variant || i.variant === variant)
+    });
     
     if (!item) return;
 
-    // Logic: If > 1, decrease. If 1, remove.
     if (item.quantity > 1) {
       await addToCart(productId, -1, variant);
     } else {
