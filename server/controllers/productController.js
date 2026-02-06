@@ -51,42 +51,62 @@ exports.getBestSellers = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
   try {
+    // 1. FAST CHECK: Limit
     const productCount = await Product.countDocuments();
-    
     if (productCount >= 25) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Limit reached: You can only create up to 25 products." 
-      });
+      return res.status(400).json({ success: false, message: "Limit reached: Max 25 products allowed." });
     }
 
-    // REMOVED weight and weightUnit from root destructuring
+    // 2. FAST CHECK: Duplicate Name
+    // Check this BEFORE uploading images to save time
     const { name, variants, details } = req.body;
+    const slug = slugify(name, { lower: true });
+    
+    const existingProduct = await Product.exists({ slug });
+    if (existingProduct) {
+      return res.status(400).json({ success: false, message: `Product "${name}" already exists.` });
+    }
 
+    // 3. SPEED UP: Parallel Image Upload
+    // Use Promise.all to upload all images at once instead of one by one
     let imagePaths = [];
     if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const path = await saveImage(file.buffer, "products", name);
-        imagePaths.push(path);
-      }
+      const uploadPromises = req.files.map(file => saveImage(file.buffer, "products", name));
+      imagePaths = await Promise.all(uploadPromises);
     }
 
-    let parsedVariants = variants;
-    if (typeof variants === 'string') parsedVariants = JSON.parse(variants);
+    let parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
+    let parsedDetails = typeof details === 'string' ? JSON.parse(details) : details;
 
-    let parsedDetails = details;
-    if (typeof details === 'string') parsedDetails = JSON.parse(details);
+    // 4. Calculate Price & Stock for Root Level
+    const rootPrice = parsedVariants.length > 0 
+      ? Math.min(...parsedVariants.map(v => Number(v.price) || 0)) 
+      : 0;
+
+    const totalStock = parsedVariants.length > 0
+      ? parsedVariants.reduce((acc, v) => acc + (Number(v.stock) || 0), 0)
+      : 0;
 
     const product = await Product.create({
       ...req.body,
-      slug: slugify(name, { lower: true }),
+      slug: slug,
       images: imagePaths,
-      variants: parsedVariants, // Weight is inside here now
-      details: parsedDetails
+      variants: parsedVariants,
+      details: parsedDetails,
+      price: rootPrice,
+      stock: totalStock
     });
 
     res.status(201).json({ success: true, data: formatProduct(product) });
+
   } catch (error) {
+    // 5. ERROR HANDLING: Catch Duplicate Key Error Cleanly
+    if (error.code === 11000) {
+       return res.status(400).json({ 
+         success: false, 
+         message: "A product with this name already exists. Please choose a different name." 
+       });
+    }
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -98,9 +118,13 @@ exports.getAllProducts = async (req, res) => {
 
     if (keyword) {
       const searchRegex = new RegExp(keyword, "i");
-      const matchingCategories = await Category.find({ name: searchRegex }).select('_id');
+      // Run category lookups in parallel
+      const [matchingCategories, matchingSubCategories] = await Promise.all([
+        Category.find({ name: searchRegex }).select('_id'),
+        SubCategory.find({ name: searchRegex }).select('_id')
+      ]);
+
       const categoryIds = matchingCategories.map(cat => cat._id);
-      const matchingSubCategories = await SubCategory.find({ name: searchRegex }).select('_id');
       const subCategoryIds = matchingSubCategories.map(sub => sub._id);
 
       query.$or = [
@@ -158,12 +182,11 @@ exports.updateProduct = async (req, res) => {
     let product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    const newImagePaths = [];
+    // Handle Image Uploads in Parallel
+    let newImagePaths = [];
     if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const path = await saveImage(file.buffer, "products", req.body.name || product.name);
-        newImagePaths.push(path);
-      }
+      const uploadPromises = req.files.map(file => saveImage(file.buffer, "products", req.body.name || product.name));
+      newImagePaths = await Promise.all(uploadPromises);
     }
 
     let keptImages = [];
@@ -178,6 +201,7 @@ exports.updateProduct = async (req, res) => {
       });
     }
 
+    // Clean up old images
     const imagesToDelete = product.images.filter(img => !keptImages.includes(img));
     imagesToDelete.forEach(img => deleteImage(img));
 
@@ -189,13 +213,31 @@ exports.updateProduct = async (req, res) => {
     if (req.body.details && typeof req.body.details === 'string') {
         req.body.details = JSON.parse(req.body.details);
     }
+
+    // Recalculate Root Price & Stock
+    if (req.body.variants) {
+      req.body.price = req.body.variants.length > 0 
+        ? Math.min(...req.body.variants.map(v => Number(v.price) || 0)) 
+        : 0;
+
+      req.body.stock = req.body.variants.length > 0
+        ? req.body.variants.reduce((acc, v) => acc + (Number(v.stock) || 0), 0)
+        : 0;
+    }
     
     if (req.body.name) req.body.slug = slugify(req.body.name, { lower: true });
 
     product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
 
     res.status(200).json({ success: true, data: formatProduct(product) });
+
   } catch (error) {
+    if (error.code === 11000) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "A product with this name already exists." 
+        });
+     }
     res.status(400).json({ success: false, message: error.message });
   }
 };
